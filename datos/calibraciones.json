@@ -1,0 +1,20 @@
+{
+  "autopista_1.mp4": {
+    "nota": "Distancia SUPUESTA (50 m): sirve para ver el sistema funcionando, no para medir velocidades reales.",
+    "CAMARA": "autopista_1",
+    "LINEA_CONTEO": [[900, 1350], [3150, 1350]],
+    "LINEA_VELOCIDAD_A": [[990, 990], [3000, 990]],
+    "LINEA_VELOCIDAD_B": [[600, 1680], [3570, 1680]],
+    "DISTANCIA_REAL_METROS": 50.0
+  },
+  "Prueba1_optimizado.mp4": {
+    "nota": "Calle lateral con tronco grande al centro: se mide solo a la izquierda del tronco. Escala de 11,5 m (muro izquierdo a arbol pequeno) = ~148 px/m; error estimado +-15 % por perspectiva.",
+    "CAMARA": "prueba1",
+    "LINEA_CONTEO": [[550, 580], [550, 920]],
+    "LINEA_VELOCIDAD_A": [[200, 620], [200, 940]],
+    "LINEA_VELOCIDAD_B": [[900, 560], [900, 900]],
+    "DISTANCIA_REAL_METROS": 4.7,
+    "LIMITE_VELOCIDAD_KMH": 30.0,
+    "VELOCIDAD_MAX_KMH": 80.0
+  }
+}

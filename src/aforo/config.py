@@ -38,7 +38,7 @@ RAIZ_PROYECTO: Path = Path(__file__).resolve().parents[2]   # <raiz>/src/aforo/c
 # ---------------------------------------------------------------------------
 # 1.1 Rutas de entrada / salida (relativas a la carpeta del proyecto)
 # ---------------------------------------------------------------------------
-VIDEO_ENTRADA: str = "datos/videos/autopista_1.mp4"      # <- TU VIDEO
+VIDEO_ENTRADA: str = "datos/videos/Prueba1_optimizado.mp4"      # <- TU VIDEO
 VIDEO_SALIDA: str = "datos/salidas/salida.mp4"        # video anotado resultante
 
 # Base de datos SQLite donde se guardan los cruces (almacenamiento final).
@@ -47,7 +47,7 @@ DB_RUTA: str = "datos/db/database.db"
 
 # Nombre de la camara / fuente de video: se guarda en la columna `camara` de cada
 # cruce para distinguir fuentes cuando varias comparten la misma base de datos.
-CAMARA: str = "autopista_1"
+CAMARA: str = "prueba1"
 
 # Fecha y hora REAL en que empieza el video, formato "AAAA-MM-DD HH:MM:SS".
 # El `momento` de cada cruce se calcula como: inicio + segundos transcurridos del
@@ -65,7 +65,7 @@ FECHA_INICIO_VIDEO: Optional[str] = None
 # Colocala DENTRO del tramo entre LINEA_VELOCIDAD_A y LINEA_VELOCIDAD_B (o a su
 # salida): cada cruce se guarda en la base de datos junto con la velocidad del
 # mismo vehiculo, que solo se conoce tras recorrer la ROI.
-LINEA_CONTEO: Tuple[Point, Point] = ((900, 1350), (3150, 1350))
+LINEA_CONTEO: Tuple[Point, Point] = ((550, 580), (550, 920))
 
 # Nombre de cada sentido de circulacion (ver README: el sentido "A" es el de
 # los vehiculos que cruzan la linea con el producto cruz positivo).
@@ -80,18 +80,18 @@ ETIQUETA_SENTIDO_B: str = "Sentido B"
 # Ambas lineas deben ser (aprox.) perpendiculares al sentido de la via y
 # no cortarse entre si. El sistema detecta automaticamente cual cruza primero,
 # asi que funciona en ambos sentidos de circulacion.
-LINEA_VELOCIDAD_A: Tuple[Point, Point] = ((990, 990), (3000, 990))
-LINEA_VELOCIDAD_B: Tuple[Point, Point] = ((600, 1680), (3570, 1680))
+LINEA_VELOCIDAD_A: Tuple[Point, Point] = ((200, 620), (200, 940))
+LINEA_VELOCIDAD_B: Tuple[Point, Point] = ((900, 560), (900, 900))
 
 # DISTANCIA REAL en metros entre la linea A y la linea B medida sobre la via
 # (por ejemplo con cinta metrica, Google Maps o marcas viales de longitud
 # conocida). De este valor depende TODA la precision de la velocidad.
-DISTANCIA_REAL_METROS: float = 50.0
+DISTANCIA_REAL_METROS: float = 4.7
 
 # Velocidades fuera de este rango se descartan por considerarse errores de
 # tracking (cambio de ID, oclusiones, etc.).
 VELOCIDAD_MIN_KMH: float = 2.0
-VELOCIDAD_MAX_KMH: float = 200.0
+VELOCIDAD_MAX_KMH: float = 80.0
 
 # ---------------------------------------------------------------------------
 # 1.4 Modelo de deteccion (YOLOv8)
@@ -142,7 +142,7 @@ FRAMES_CONSECUTIVOS_MIN: int = 3     # apariciones seguidas para confirmar un ID
 # ---------------------------------------------------------------------------
 # ALERTA "EXCESO_VELOCIDAD": se registra en la tabla `alertas` cuando la velocidad
 # medida de un vehiculo supera este limite (ajustalo al limite legal de la via).
-LIMITE_VELOCIDAD_KMH: float = 60.0
+LIMITE_VELOCIDAD_KMH: float = 30.0
 
 # ALERTA "TRAFICO_DETENIDO": hay al menos N vehiculos en la ROI y casi nada de
 # movimiento dentro de ellos de forma sostenida (posible congestion o accidente).

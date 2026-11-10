@@ -31,10 +31,11 @@ proceso aparte; si falla, se restaura el texto anterior.
 from __future__ import annotations
 
 import ast
-import os
 import json
-import importlib.util
+import os
 import re
+import shutil
+import importlib.util
 import sqlite3
 import subprocess
 import sys
@@ -75,32 +76,81 @@ VALORES_EJEMPLO: Dict[str, Any] = {
     "DISTANCIA_REAL_METROS": 20.0,
 }
 
-# Calibraciones ya probadas de punta a punta con los videos publicos. La distancia es una
-# SUPOSICION: sirve para ver el sistema funcionando, no para medir velocidades reales.
-PRESETS: Dict[str, Dict[str, Any]] = {
-    "autopista_1.mp4": {
-        "LINEA_CONTEO": ((900, 1350), (3150, 1350)),
-        "LINEA_VELOCIDAD_A": ((990, 990), (3000, 990)),
-        "LINEA_VELOCIDAD_B": ((600, 1680), (3570, 1680)),
-        "DISTANCIA_REAL_METROS": 50.0,
-    },
-}
+# Perfiles de calibracion POR VIDEO (datos/calibraciones.json): lineas, distancia real, camara y
+# limites. Al elegir un video en el menu se aplica su perfil; al calibrar o editar esos valores
+# se guarda de nuevo. Asi cambiar de video no obliga a recalibrar.
+ARCHIVO_PERFILES = RAIZ / "datos" / "calibraciones.json"
+CLAVES_PERFIL = ("CAMARA", "LINEA_CONTEO", "LINEA_VELOCIDAD_A", "LINEA_VELOCIDAD_B",
+                 "DISTANCIA_REAL_METROS", "LIMITE_VELOCIDAD_KMH", "VELOCIDAD_MAX_KMH")
+
+
+def _a_tuplas(valor: Any) -> Any:
+    """JSON guarda las lineas como listas; config.py las espera como tuplas ((x, y), (x, y))."""
+    return tuple(_a_tuplas(v) for v in valor) if isinstance(valor, list) else valor
+
+
+def cargar_perfiles() -> Dict[str, Dict[str, Any]]:
+    try:
+        crudo = json.loads(ARCHIVO_PERFILES.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return {video: {k: _a_tuplas(v) for k, v in perfil.items()} for video, perfil in crudo.items()}
+
+
+def guardar_perfil(video: str, valores: Dict[str, Any]) -> None:
+    """Crea o actualiza el perfil de un video con los valores indicados (el resto se conserva)."""
+    try:
+        crudo = json.loads(ARCHIVO_PERFILES.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        crudo = {}
+    crudo.setdefault(video, {}).update({k: v for k, v in valores.items() if k in CLAVES_PERFIL})
+    ARCHIVO_PERFILES.parent.mkdir(parents=True, exist_ok=True)
+    ARCHIVO_PERFILES.write_text(json.dumps(crudo, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+
+
+PRESETS: Dict[str, Dict[str, Any]] = cargar_perfiles()
 
 
 # =============================================================================
 # Utilidades de consola
 # =============================================================================
 def configurar_consola() -> None:
-    """Evita errores de codificacion en consolas de Windows."""
+    """Evita errores de codificacion y activa los colores ANSI en la consola de Windows."""
     for flujo in (sys.stdout, sys.stderr):
         try:
             flujo.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
         except (AttributeError, ValueError):
             pass
+    if os.name == "nt":
+        os.system("")          # habilita las secuencias ANSI en conhost/Windows Terminal
 
 
-def titulo(texto: str) -> None:
-    print(f"\n{'=' * 64}\n {texto}\n{'=' * 64}")
+# Colores: solo si la salida es una terminal y el usuario no los desactivo (NO_COLOR).
+COLOR = sys.stdout.isatty() and "NO_COLOR" not in os.environ
+_CODIGOS = {"tenue": "2", "negrita": "1", "ok": "32", "aviso": "33", "error": "31", "info": "36", "acento": "1;36"}
+
+
+def est(texto: str, estilo: str) -> str:
+    """Envuelve `texto` con el estilo ANSI indicado (o lo deja intacto sin colores)."""
+    return f"[{_CODIGOS[estilo]}m{texto}[0m" if COLOR else texto
+
+
+def titulo(texto: str, detalle: str = "") -> None:
+    """Cabecera de seccion: linea fina, titulo en acento y una frase que explica para que sirve."""
+    print(f"\n{est('─' * 66, 'tenue')}\n {est(texto, 'acento')}")
+    if detalle:
+        print(f" {est(detalle, 'tenue')}")
+    print(est('─' * 66, 'tenue'))
+
+
+def marca(nivel: str) -> str:
+    """Indicador de estado: ✔ correcto, ! aviso, ✘ error."""
+    return {"ok": est("✔", "ok"), "aviso": est("!", "aviso"), "error": est("✘", "error")}[nivel]
+
+
+def limpiar_pantalla() -> None:
+    if sys.stdout.isatty():
+        os.system("cls" if os.name == "nt" else "clear")
 
 
 def pedir(texto: str, defecto: Optional[str] = None) -> str:
@@ -132,9 +182,9 @@ def elegir(opciones: Sequence[str], texto: str = "Opcion", con_volver: bool = Tr
            etiqueta_cero: str = "Volver") -> Optional[int]:
     """Muestra una lista numerada y devuelve el indice elegido (None = volver)."""
     for i, o in enumerate(opciones, 1):
-        print(f"  {i:>2}) {o}")
+        print(f"  {est(f'{i:>2}', 'info')}  {o}")
     if con_volver:
-        print(f"   0) {etiqueta_cero}")
+        print(f"  {est(' 0', 'tenue')}  {est(etiqueta_cero, 'tenue')}")
     while True:
         r = pedir(texto)
         if r in ("", "0") and con_volver:
@@ -597,54 +647,148 @@ def asegurar_config_valida() -> bool:
 
 
 def descargar_videos() -> None:
-    titulo("DESCARGAR VIDEOS DE PRUEBA")
+    titulo("Descargar videos de prueba", "Tres videos públicos de tráfico para probar el sistema sin depender del video final.")
     if not modulo_instalado("tqdm") or not modulo_instalado("cv2"):
-        print("[X] descargar_videos.py necesita tqdm y opencv-python.")
+        print(f"{marca('error')} La descarga necesita tqdm y opencv-python.")
         if not asegurar_dependencias(False):
             return
     ejecutar([PY, "-m", "aforo", "descargar"], "Descargando (los que ya existen se omiten)")
 
 
-def elegir_video() -> Optional[Path]:
-    """Elige el video activo; actualiza VIDEO_ENTRADA y CAMARA. Ofrece descargar si no hay."""
-    videos = listar_videos()
-    if not videos:
-        print("\n[X] No hay videos en datos/videos/.")
-        if confirmar("Descargar los videos de prueba ahora", True):
-            descargar_videos()
-            videos = listar_videos()
-        if not videos:
-            print("Copia un video a datos/videos/ o descarga los de prueba.")
-            return None
-    etiquetas = []
-    for v in videos:
-        i = info_video(v)
-        etiquetas.append(f"{v.name}  ({i[0]}x{i[1]}, {i[3] / i[2]:.0f} s)" if i and i[2] else v.name)
-    idx = elegir(etiquetas, "Video a usar")
-    if idx is None:
-        return None
-    video = videos[idx]
-    error = aplicar_cambios({"VIDEO_ENTRADA": f"datos/videos/{video.name}", "CAMARA": video.stem})
-    if error:
-        print(f"[X] No se pudo actualizar config.py: {error}")
-        return None
-    print(f"\nVideo activo: datos/videos/{video.name}   camara: {video.stem}")
-    if video.name in PRESETS and confirmar("Hay una calibracion probada para este video. Aplicarla", True):
-        aplicar_preset(video.name)
-    return video
+# ---------------------------------------------------------------------------
+# Perfiles por video: cambiar de video no obliga a recalibrar
+# ---------------------------------------------------------------------------
+def video_activo() -> Path:
+    return ruta_absoluta(str(valores_actuales().get("VIDEO_ENTRADA", "")))
 
 
-def aplicar_preset(nombre_video: str) -> bool:
-    error = aplicar_cambios(dict(PRESETS[nombre_video]))
-    if error:
-        print(f"[X] No se pudo aplicar: {error}")
+def nombre_camara_valido(texto: str) -> str:
+    """Nombre de camara seguro para la base de datos (letras, numeros, guion y guion bajo)."""
+    limpio = re.sub(r"[^\w\-]+", "_", texto, flags=re.UNICODE).strip("_")
+    return limpio or "camara_01"
+
+
+def sincronizar_perfil() -> None:
+    """Guarda en el perfil del video activo los valores de calibracion que hay ahora en config.py."""
+    vals = valores_actuales()
+    nombre = Path(str(vals.get("VIDEO_ENTRADA", ""))).name
+    if nombre:
+        guardar_perfil(nombre, {k: vals[k] for k in CLAVES_PERFIL if k in vals})
+        PRESETS.clear()
+        PRESETS.update(cargar_perfiles())
+
+
+def aplicar_perfil(nombre_video: str) -> bool:
+    """Aplica a config.py el perfil guardado de un video. False si no hay o falla."""
+    perfil = {k: v for k, v in PRESETS.get(nombre_video, {}).items() if k in CLAVES_PERFIL}
+    if not perfil:
         return False
-    print("Calibracion aplicada (la distancia de 50 m es una SUPOSICION: sirve para probar, no para medir).")
+    error = aplicar_cambios(perfil)
+    if error:
+        print(f"{marca('error')} No se pudo aplicar el perfil: {error}")
+        return False
     return True
 
 
+def aplicar_preset(nombre_video: str) -> bool:
+    """Compatibilidad: aplica el perfil guardado de un video e informa al usuario."""
+    if not aplicar_perfil(nombre_video):
+        return False
+    nota = PRESETS.get(nombre_video, {}).get("nota")
+    print(f"{marca('ok')} Calibración de «{nombre_video}» aplicada." + (f"\n  {est(str(nota), 'tenue')}" if nota else ""))
+    return True
+
+
+def activar_video(ruta: Path) -> bool:
+    """Deja `ruta` como video activo: actualiza config.py y aplica su perfil si existe."""
+    try:
+        relativa = ruta.resolve().relative_to(RAIZ)
+        texto_ruta = relativa.as_posix()
+    except ValueError:
+        texto_ruta = ruta.resolve().as_posix()           # fuera del proyecto: ruta absoluta
+    camara = PRESETS.get(ruta.name, {}).get("CAMARA") or nombre_camara_valido(ruta.stem)
+    error = aplicar_cambios({"VIDEO_ENTRADA": texto_ruta, "CAMARA": camara})
+    if error:
+        print(f"{marca('error')} No se pudo actualizar config.py: {error}")
+        return False
+    print(f"\n{marca('ok')} Video activo: {est(ruta.name, 'negrita')}   cámara: {camara}")
+    if aplicar_perfil(ruta.name):
+        nota = PRESETS[ruta.name].get("nota")
+        print(f"{marca('ok')} Se aplicó la calibración guardada de este video (líneas, distancia y límites)."
+              + (f"\n  {est(str(nota), 'tenue')}" if nota else ""))
+    else:
+        print(f"{marca('aviso')} Este video aún no está calibrado. Usa «Calibrar» para marcar las líneas "
+              "y la distancia real; el menú las recordará.")
+    return True
+
+
+def _fila_video(v: Path, activo: Path, camaras_con_datos: Dict[str, int]) -> str:
+    info = info_video(v)
+    res = f"{info[0]}x{info[1]}" if info else "?"
+    dur = f"{int(info[3] / info[2] // 60)}:{int(info[3] / info[2] % 60):02d}" if info and info[2] else "?"
+    mb = f"{v.stat().st_size / 1e6:,.0f} MB"
+    perfil = PRESETS.get(v.name)
+    calibrado = est("calibrado", "ok") if perfil else est("sin calibrar", "aviso")
+    cam = (perfil or {}).get("CAMARA") or nombre_camara_valido(v.stem)
+    datos = camaras_con_datos.get(cam)
+    procesado = est(f"{datos} cruces", "info") if datos else est("sin procesar", "tenue")
+    es_activo = v.resolve() == activo.resolve()
+    nombre = f"{v.name[:30]:<30}"
+    return (f"{est('● ', 'ok') if es_activo else '  '}{est(nombre, 'negrita') if es_activo else nombre} "
+            f"{res:>10} {dur:>6} {mb:>9}   {calibrado}  ·  {procesado}")
+
+
+def elegir_video() -> Optional[Path]:
+    """Gestor de videos: lista con estado, elegir uno, agregar por ruta o descargar los de prueba."""
+    while True:
+        vals = valores_actuales()
+        activo = ruta_absoluta(str(vals.get("VIDEO_ENTRADA", "")))
+        videos = listar_videos()
+        filas = resumen_bd(ruta_absoluta(str(vals.get("DB_RUTA", "datos/db/database.db")))) or []
+        con_datos = {c: n for c, n, *_ in filas}
+        titulo("Videos", "Elige el video a analizar. Cada video recuerda su calibración (líneas y distancia).")
+        if not videos:
+            print(f"  {marca('aviso')} No hay videos en datos/videos/.\n")
+        else:
+            print(est(f"  {'':2}{'Video':<30} {'Resolución':>10} {'Dur.':>6} {'Tamaño':>9}   Estado", "tenue"))
+            for i, v in enumerate(videos, 1):
+                print(f"{est(f'{i:>2}', 'info')} {_fila_video(v, activo, con_datos)}")
+        print(f"\n  {est(' A', 'info')}  Agregar un video desde otra carpeta (ruta completa)"
+              f"\n  {est(' D', 'info')}  Descargar los videos de prueba"
+              f"\n  {est(' 0', 'tenue')}  {est('Volver', 'tenue')}")
+        r = pedir("\nNúmero de video, A, D o 0").strip().lower()
+        if r in ("", "0"):
+            return activo if activo.is_file() else None
+        if r == "d":
+            descargar_videos()
+            continue
+        if r == "a":
+            ruta = pedir("Ruta completa del video (.mp4/.avi/.mov/.mkv)").strip().strip('"')
+            candidato = Path(ruta)
+            if not candidato.is_file() or candidato.suffix.lower() not in EXTENSIONES_VIDEO:
+                print(f"{marca('error')} No encuentro un video válido en esa ruta.")
+                continue
+            if info_video(candidato) is None and modulo_instalado("cv2"):
+                print(f"{marca('error')} OpenCV no puede abrir ese archivo.")
+                continue
+            destino = RAIZ / "datos" / "videos" / candidato.name
+            if candidato.resolve().parent != destino.parent.resolve() and confirmar(
+                    f"¿Copiarlo a datos/videos/ ({candidato.stat().st_size / 1e6:,.0f} MB)? (No = usarlo desde donde está)", False):
+                destino.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(candidato, destino)
+                candidato = destino
+            activar_video(candidato)
+            continue
+        if r.isdigit() and 1 <= int(r) <= len(videos):
+            if activar_video(videos[int(r) - 1]) and not PRESETS.get(videos[int(r) - 1].name) \
+                    and confirmar("¿Calibrarlo ahora?", True):
+                calibrar()
+            continue
+        print(f"  {marca('aviso')} Opción no válida.")
+
+
 def calibrar() -> None:
-    titulo("CALIBRAR LINEAS")
+    titulo("Calibrar", "Marca dónde cuentan los vehículos (línea de conteo), el tramo A–B donde se mide la velocidad y su distancia REAL en metros.")
     vals = valores_actuales()
     activo = ruta_absoluta(str(vals.get("VIDEO_ENTRADA", "")))
     if not activo.is_file():
@@ -659,7 +803,7 @@ def calibrar() -> None:
     opciones = ["Hacer clic sobre un frame del video (ventana)", "Escribir las coordenadas a mano",
                 "Medir/cambiar solo la distancia real entre A y B"]
     if activo.name in PRESETS:
-        opciones.append("Aplicar la calibracion probada para este video")
+        opciones.append("Restaurar la calibración guardada de este video")
     idx = elegir(opciones)
     if idx is None:
         return
@@ -687,6 +831,7 @@ def calibrar() -> None:
         editar_parametro(_buscar_parametro("DISTANCIA_REAL_METROS"))
     elif idx == 3:
         aplicar_preset(activo.name)
+    sincronizar_perfil()          # recuerda esta calibracion para este video
     # Comprobacion final contra el tamano real del video
     if info:
         malas = lineas_fuera_de_cuadro(valores_actuales(), info[0], info[1])
@@ -717,7 +862,12 @@ def editar_parametro(p: Parametro) -> None:
         except ValueError as exc:
             print(f"  Valor no valido: {exc}")
     error = aplicar_cambios({p.nombre: valor})
-    print(f"[X] No se guardo, config.py quedaria invalida: {error}" if error else f"Guardado: {p.nombre} = {valor!r}")
+    if error:
+        print(f"{marca('error')} No se guardó, config.py quedaría inválida: {error}")
+        return
+    print(f"{marca('ok')} Guardado: {p.nombre} = {valor!r}")
+    if p.nombre in CLAVES_PERFIL:
+        sincronizar_perfil()
 
 
 def menu_configuracion() -> None:
@@ -825,25 +975,8 @@ def abrir_dashboard() -> None:
 
 
 def menu_videos() -> None:
-    while True:
-        titulo("VIDEOS")
-        idx = elegir(["Descargar videos de prueba", "Elegir el video a procesar (y su camara)",
-                      "Calibrar lineas y distancia", "Listar videos locales"])
-        if idx is None:
-            return
-        if idx == 0:
-            descargar_videos()
-        elif idx == 1:
-            elegir_video()
-        elif idx == 2:
-            calibrar()
-        elif idx == 3:
-            for v in listar_videos() or []:
-                i = info_video(v)
-                print(f"  {v.name}  " + (f"{i[0]}x{i[1]} @ {i[2]:.0f} FPS, {i[3]} frames" if i else f"{v.stat().st_size / 1e6:.1f} MB"))
-            if not listar_videos():
-                print("  (no hay videos)")
-        pausa()
+    """Compatibilidad: el gestor de videos ahora es `elegir_video`."""
+    elegir_video()
 
 
 def menu_bd() -> None:
@@ -958,59 +1091,159 @@ def correr_pruebas() -> None:
 
 
 def prueba_rapida() -> None:
-    """Flujo guiado: entorno -> videos -> calibracion de ejemplo -> procesar -> dashboard."""
-    titulo("PRUEBA RAPIDA (autopista_1)")
-    print("Verifica el entorno, descarga el video si falta, aplica la calibracion probada,\n"
-          "procesa el video y abre el dashboard.\n")
+    """Flujo guiado: entorno -> video de ejemplo -> su calibracion guardada -> procesar -> dashboard."""
+    titulo("Prueba rápida", "Todo el flujo con un video de ejemplo: verifica, descarga si falta, calibra, procesa y abre el panel.")
     if not asegurar_dependencias(True):
         print("No se puede continuar sin las dependencias.")
         return
     video = RAIZ / "datos" / "videos" / "autopista_1.mp4"
     if not video.is_file():
-        print("Falta datos/videos/autopista_1.mp4.")
+        print(f"{marca('aviso')} Falta datos/videos/autopista_1.mp4.")
         if not confirmar("Descargar los videos de prueba", True):
             return
         descargar_videos()
         if not video.is_file():
-            print("[X] No se pudo descargar autopista_1.mp4 (revisa tu conexion).")
+            print(f"{marca('error')} No se pudo descargar autopista_1.mp4 (revisa tu conexión).")
             return
-    error = aplicar_cambios({"VIDEO_ENTRADA": "datos/videos/autopista_1.mp4", "CAMARA": "autopista_1",
-                             **PRESETS["autopista_1.mp4"]})
-    if error:
-        print(f"[X] No se pudo preparar config.py: {error}")
+    if not activar_video(video):
         return
-    print("Configuracion lista para autopista_1 (calibracion probada, distancia supuesta).")
     procesar_video()
+
+
+# =============================================================================
+# Panel de estado, siguiente paso recomendado y ayuda
+# =============================================================================
+def estado_resumido() -> Dict[str, Any]:
+    """Foto rapida del proyecto para el panel del menu (sin subprocesos: es barata)."""
+    vals = valores_actuales()
+    activo = ruta_absoluta(str(vals.get("VIDEO_ENTRADA", "")))
+    info = info_video(activo) if activo.is_file() else None
+    lineas_ok = bool(info) and not lineas_fuera_de_cuadro(vals, info[0], info[1]) and not es_calibracion_de_ejemplo(vals)
+    camara = str(vals.get("CAMARA", ""))
+    filas = resumen_bd(ruta_absoluta(str(vals.get("DB_RUTA", "datos/db/database.db")))) or []
+    return {
+        "deps": not dependencias_faltantes(False), "deps_dash": not dependencias_faltantes(True),
+        "video": activo, "video_existe": activo.is_file(), "info": info, "calibrado": lineas_ok,
+        "camara": camara, "cruces": next((n for c, n, *_ in filas if c == camara), 0),
+        "camaras": len(filas), "videos": len(listar_videos()),
+    }
+
+
+def siguiente_paso(e: Dict[str, Any]) -> Tuple[str, str]:
+    """Que hacer ahora, segun el estado: (texto, numero de opcion del menu)."""
+    if not e["deps"]:
+        return "Instalar las dependencias (faltan paquetes).", "11"
+    if not e["video_existe"]:
+        return "Elegir o descargar un video para analizar.", "1"
+    if not e["calibrado"]:
+        return "Calibrar el video: marcar las líneas y la distancia real.", "2"
+    if e["cruces"] == 0:
+        return "Procesar el video: contar vehículos y medir velocidades.", "4"
+    if not e["deps_dash"]:
+        return "Instalar las dependencias del dashboard.", "11"
+    return "Ver los resultados en el dashboard.", "5"
+
+
+def panel_estado(e: Dict[str, Any]) -> None:
+    """Resumen de una pantalla: video activo, calibracion, datos y el siguiente paso."""
+    def linea(nivel: str, etiqueta: str, valor: str) -> None:
+        print(f"  {marca(nivel)} {est(f'{etiqueta:<13}', 'tenue')} {valor}")
+
+    nombre = e["video"].name if e["video_existe"] else "ninguno"
+    if e["info"]:
+        i = e["info"]
+        nombre += est(f"  {i[0]}x{i[1]} · {int(i[3] / max(i[2], 1) // 60)} min", "tenue")
+    linea("ok" if e["video_existe"] else "error", "Video activo", nombre)
+    linea("ok" if e["calibrado"] else "aviso", "Calibración", "lista" if e["calibrado"] else "pendiente (líneas y distancia real)")
+    linea("ok" if e["cruces"] else "aviso", "Datos", f"{e['cruces']} cruces de «{e['camara']}»" if e["cruces"] else f"sin procesar «{e['camara']}»")
+    linea("ok" if e["deps"] else "error", "Dependencias", "instaladas" if e["deps"] else "faltan paquetes")
+    texto, opcion = siguiente_paso(e)
+    print(f"\n  {est('Siguiente paso', 'acento')}  {texto}  {est(f'→ opción {opcion}', 'info')}")
+
+
+def ayuda() -> None:
+    titulo("Ayuda", "Cómo funciona el sistema, en cuatro pasos.")
+    print(f"""
+  {est('1  Elegir el video', 'negrita')}       Cada video recuerda su calibración. Puedes agregar el tuyo.
+  {est('2  Calibrar', 'negrita')}              Tres cosas sobre el video:
+        · {est('línea de conteo', 'info')}: cada vehículo que la cruza se cuenta una vez.
+        · {est('tramo A–B', 'info')}: dos líneas entre las que se mide el tiempo de cada vehículo.
+        · {est('distancia real', 'info')} entre A y B en metros (mídela en el sitio: de ella depende
+          toda la velocidad). Velocidad = distancia ÷ tiempo.
+  {est('3  Procesar', 'negrita')}             YOLO detecta, ByteTrack sigue, y todo se guarda en SQLite.
+        Tip: en CPU usa el «modo rápido» para ver el sistema moverse (menos preciso).
+  {est('4  Dashboard', 'negrita')}            Panel web con aforo, velocidades, alertas y estado de la vía.
+
+  {est('Dónde está cada cosa', 'negrita')}
+        datos/videos        tus videos             datos/db        la base de datos
+        datos/modelos       pesos de YOLO          src/aforo       el código
+        datos/calibraciones.json   calibración de cada video
+
+  {est('Sin menú', 'negrita')}   python -m aforo procesar | dashboard | calibrar | evaluar ...  (python -m aforo --help)
+""")
 
 
 # =============================================================================
 # Menu principal
 # =============================================================================
+BANNER = """
+   ╭─────────────────────────────────────────────────────╮
+   │   AFORO VIAL   ·   conteo y velocidad de vehículos  │
+   │   YOLOv8 · ByteTrack · SQLite                       │
+   ╰─────────────────────────────────────────────────────╯"""
+
+
 def menu_principal() -> None:
-    estado = diagnostico()
+    grupos: List[Tuple[str, List[Tuple[str, str, str, Callable[[], Any], bool]]]] = [
+        ("PREPARAR", [
+            ("1", "Videos", "elegir, agregar o descargar el video a analizar", menu_videos, False),
+            ("2", "Calibrar", "marcar líneas y distancia real del video activo", calibrar, True),
+            ("3", "Configuración", "ver y editar cualquier parámetro", menu_configuracion, False),
+        ]),
+        ("EJECUTAR", [
+            ("4", "Procesar", "analizar el video activo → base de datos", procesar_video, True),
+            ("5", "Dashboard", "abrir el panel web con los resultados", abrir_dashboard, True),
+            ("6", "Prueba rápida", "flujo guiado completo con un video de ejemplo", prueba_rapida, True),
+        ]),
+        ("ANALIZAR", [
+            ("7", "Base de datos", "resumen, cruces, alertas, borrar una cámara", menu_bd, False),
+            ("8", "Evaluación", "verdad de terreno, métricas y auditoría del tracking", menu_evaluacion, False),
+        ]),
+        ("SISTEMA", [
+            ("9", "Diagnóstico", "revisión completa del entorno", diagnostico, True),
+            ("10", "Pruebas", "ejecutar las pruebas unitarias", correr_pruebas, True),
+            ("11", "Instalar", "dependencias del proyecto", instalar_dependencias, True),
+            ("12", "Ayuda", "cómo funciona, paso a paso", ayuda, True),
+        ]),
+    ]
+    mapa = {num: (accion, pausar) for _, items in grupos for num, _, _, accion, pausar in items}
     while True:
-        titulo("MENU PRINCIPAL")
-        acciones: List[Tuple[str, Callable[[], Any]]] = [
-            ("Diagnostico (que tengo y que me falta)", lambda: diagnostico()),
-            ("Prueba rapida guiada (autopista_1: todo de punta a punta)", prueba_rapida),
-            ("Videos: descargar / elegir / calibrar", menu_videos),
-            ("Configuracion: ver y editar parametros", menu_configuracion),
-            ("Procesar el video activo", procesar_video),
-            ("Dashboard", abrir_dashboard),
-            ("Base de datos: resumen, cruces, alertas, borrar", menu_bd),
-            ("Evaluacion: verdad de terreno, metricas, tracking", menu_evaluacion),
-            ("Pruebas unitarias", correr_pruebas),
-            ("Instalar dependencias", instalar_dependencias),
-        ]
-        idx = elegir([a[0] for a in acciones], "Opcion", etiqueta_cero="Salir")
-        if idx is None:
-            print("\nHasta luego.")
-            return
+        limpiar_pantalla()
+        print(est(BANNER, "acento"))
+        print()
+        panel_estado(estado_resumido())
+        for nombre_grupo, items in grupos:
+            print(f"\n  {est(nombre_grupo, 'tenue')}")
+            for num, nombre, detalle, _, _ in items:
+                print(f"   {est(f'{num:>2}', 'info')}  {est(f'{nombre:<14}', 'negrita')} {est(detalle, 'tenue')}")
+        print(f"\n   {est(' 0', 'tenue')}  {est('Salir', 'tenue')}")
         try:
-            acciones[idx][1]()
+            r = pedir("\n  Opción").strip().lower()
         except KeyboardInterrupt:
-            print("\n(Cancelado)")
-        if idx in (0, 1, 4, 5, 8, 9):
+            r = "0"
+        if r in ("0", "q", "salir"):
+            print(f"\n  {est('Hasta luego.', 'tenue')}\n")
+            return
+        if r not in mapa:
+            print(f"  {marca('aviso')} Opción no válida.")
+            pausa()
+            continue
+        accion, pausar = mapa[r]
+        try:
+            accion()
+        except KeyboardInterrupt:
+            print("\n  (Cancelado)")
+        if pausar:
             pausa()
 
 

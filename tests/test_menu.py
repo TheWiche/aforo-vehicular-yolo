@@ -139,7 +139,7 @@ class DiagnosticoTest(unittest.TestCase):
 
     def test_los_presets_son_validos(self) -> None:
         for nombre, preset in menu.PRESETS.items():
-            self.assertEqual(set(preset), set(menu.VALORES_EJEMPLO), nombre)
+            self.assertTrue(set(menu.VALORES_EJEMPLO) <= set(preset), nombre)
 
     def test_dependencias_faltantes_devuelve_nombres_pip(self) -> None:
         for pip in menu.dependencias_faltantes(True):
