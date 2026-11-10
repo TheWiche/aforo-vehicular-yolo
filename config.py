@@ -38,7 +38,7 @@ RAIZ_PROYECTO: Path = Path(__file__).resolve().parent
 # ---------------------------------------------------------------------------
 # 1.1 Rutas de entrada / salida (relativas a la carpeta del proyecto)
 # ---------------------------------------------------------------------------
-VIDEO_ENTRADA: str = "videos/entrada.mp4"      # <- TU VIDEO
+VIDEO_ENTRADA: str = "videos/autopista_1.mp4"      # <- TU VIDEO
 VIDEO_SALIDA: str = "output/salida.mp4"        # video anotado resultante
 
 # Base de datos SQLite donde se guardan los cruces (almacenamiento final).
@@ -47,7 +47,7 @@ DB_RUTA: str = "db/database.db"
 
 # Nombre de la camara / fuente de video: se guarda en la columna `camara` de cada
 # cruce para distinguir fuentes cuando varias comparten la misma base de datos.
-CAMARA: str = "camara_01"
+CAMARA: str = "autopista_1"
 
 # Fecha y hora REAL en que empieza el video, formato "AAAA-MM-DD HH:MM:SS".
 # El `momento` de cada cruce se calcula como: inicio + segundos transcurridos del
@@ -65,7 +65,7 @@ FECHA_INICIO_VIDEO: Optional[str] = None
 # Colocala DENTRO del tramo entre LINEA_VELOCIDAD_A y LINEA_VELOCIDAD_B (o a su
 # salida): cada cruce se guarda en la base de datos junto con la velocidad del
 # mismo vehiculo, que solo se conoce tras recorrer la ROI.
-LINEA_CONTEO: Tuple[Point, Point] = ((0, 400), (1280, 400))
+LINEA_CONTEO: Tuple[Point, Point] = ((900, 1350), (3150, 1350))
 
 # Nombre de cada sentido de circulacion (ver README: el sentido "A" es el de
 # los vehiculos que cruzan la linea con el producto cruz positivo).
@@ -80,13 +80,13 @@ ETIQUETA_SENTIDO_B: str = "Sentido B"
 # Ambas lineas deben ser (aprox.) perpendiculares al sentido de la via y
 # no cortarse entre si. El sistema detecta automaticamente cual cruza primero,
 # asi que funciona en ambos sentidos de circulacion.
-LINEA_VELOCIDAD_A: Tuple[Point, Point] = ((200, 300), (1100, 300))
-LINEA_VELOCIDAD_B: Tuple[Point, Point] = ((100, 550), (1200, 550))
+LINEA_VELOCIDAD_A: Tuple[Point, Point] = ((990, 990), (3000, 990))
+LINEA_VELOCIDAD_B: Tuple[Point, Point] = ((600, 1680), (3570, 1680))
 
 # DISTANCIA REAL en metros entre la linea A y la linea B medida sobre la via
 # (por ejemplo con cinta metrica, Google Maps o marcas viales de longitud
 # conocida). De este valor depende TODA la precision de la velocidad.
-DISTANCIA_REAL_METROS: float = 20.0
+DISTANCIA_REAL_METROS: float = 50.0
 
 # Velocidades fuera de este rango se descartan por considerarse errores de
 # tracking (cambio de ID, oclusiones, etc.).

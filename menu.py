@@ -793,6 +793,8 @@ def procesar_video(forzar_pregunta_reemplazo: bool = True, ofrecer_dashboard: bo
         print(f"[!] La camara '{camara}' ya tiene {previos} cruces en la base de datos.")
         if forzar_pregunta_reemplazo and confirmar("Borrarlos antes de procesar (evita duplicados)", True):
             comando.append("--reemplazar")
+    if confirmar("Ver el modelo trabajando en vivo en una ventana (tecla q para detenerla)", True):
+        comando.append("--mostrar")
     estimado = info[3] / max(info[2], 1)
     print(f"\nVideo: {activo.name} {info[0]}x{info[1]}, {estimado:.0f} s ({info[3]} frames). "
           "En CPU puede tardar varios minutos.")
