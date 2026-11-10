@@ -19,7 +19,24 @@ pip install -r requirements.txt
 > Probado con Python 3.12. Para usar GPU NVIDIA instala antes la build CUDA de PyTorch
 > (ver pytorch.org) y luego el resto de `requirements.txt`.
 
-## Ejecutar (flujo completo)
+## Menú interactivo (la forma más fácil de probar)
+
+```bash
+python menu.py
+```
+
+Menú en la terminal que **revisa primero qué tienes y qué te falta** (dependencias, pesos, videos,
+calibración, base de datos, verdad de terreno) y, antes de cada acción, comprueba sus requisitos y
+ofrece resolverlos (instalar dependencias, descargar videos, calibrar). Permite:
+
+- **Prueba rápida guiada:** descarga `autopista_1`, aplica su calibración probada, procesa y abre el dashboard.
+- **Configuración (tipo CRUD sobre `config.py`):** ver y editar cada parámetro con validación de tipo y
+  rango; si un cambio dejaría la configuración inválida, se revierte solo.
+- **Videos:** descargar, elegir el video activo y calibrar las líneas haciendo clic sobre un frame.
+- **Procesar, dashboard, base de datos** (resumen, cruces, alertas, borrar una cámara), **evaluación** y
+  **pruebas unitarias**.
+
+## Ejecutar (flujo completo, sin menú)
 
 ```bash
 python descargar_videos.py                                                        # 1. videos de prueba -> videos/
@@ -121,6 +138,7 @@ movimiento.py          Resta de fondo + umbralización + morfología (movimiento
 alertas.py             Reglas: exceso de velocidad y tráfico detenido (con histéresis)
 visualizer.py          Cajas, etiquetas, estelas, ROI y panel de conteo
 geometry.py            Producto cruz, intersección de segmentos, polígono de la ROI
+menu.py                Menú interactivo: diagnóstico, configuración, videos, procesar, BD, evaluación
 dashboard.py           Panel Streamlit (modo oscuro) con consultas SQL
 evaluar.py             Métricas contra verdad de terreno
 anotar_verdad_terreno.py  Herramienta para marcar cruces a mano
