@@ -432,6 +432,37 @@ def dependencias_faltantes(incluir_dashboard: bool = False) -> List[str]:
     return [pip for g in grupos for mod, (pip, _) in g.items() if not modulo_instalado(mod)]
 
 
+def estado_gpu() -> Tuple[str, str]:
+    """
+    Que hardware usara YOLO: ("gpu", nombre) | ("cpu_con_gpu", nombre) | ("cpu", "").
+
+    "cpu_con_gpu" = hay una tarjeta NVIDIA pero PyTorch esta instalado sin CUDA (el caso mas
+    comun: `pip install torch` en Windows trae la version solo-CPU). Se consulta en un
+    subproceso para no cargar torch en el menu.
+    """
+    if modulo_instalado("torch"):
+        try:
+            r = subprocess.run([PY, "-c", "import torch; print(torch.cuda.is_available()); "
+                                "print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else '')"],
+                               capture_output=True, text=True, timeout=120)
+            lineas = r.stdout.strip().splitlines()
+            if len(lineas) >= 2 and lineas[0] == "True":
+                return "gpu", lineas[1]
+        except (subprocess.SubprocessError, OSError):
+            pass
+    try:
+        r = subprocess.run(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
+                           capture_output=True, text=True, timeout=15)
+        if r.returncode == 0 and r.stdout.strip():
+            return "cpu_con_gpu", r.stdout.strip().splitlines()[0]
+    except (subprocess.SubprocessError, OSError):
+        pass
+    return "cpu", ""
+
+
+COMANDO_TORCH_CUDA = "pip install --force-reinstall --no-deps torch==2.14.1+cu130 torchvision==0.29.1+cu130 --index-url https://download.pytorch.org/whl/cu130"
+
+
 def en_entorno_virtual() -> bool:
     return sys.prefix != getattr(sys, "base_prefix", sys.prefix)
 
@@ -524,6 +555,18 @@ def diagnostico(detallado: bool = True) -> Dict[str, bool]:
           + ("" if not falta_d else f": faltan {', '.join(falta_d)}"))
     if falta_n or falta_d:
         print("      -> Menu principal, opcion 'Instalar dependencias'.")
+
+    # --- GPU ------------------------------------------------------------------------------
+    if not falta_n:
+        modo_gpu, nombre_gpu = estado_gpu()
+        estado["gpu"] = modo_gpu == "gpu"
+        if modo_gpu == "gpu":
+            print(f"[OK] GPU: {nombre_gpu} (CUDA). YOLO la usa solo.")
+        elif modo_gpu == "cpu_con_gpu":
+            print(f"[! ] Tienes una {nombre_gpu}, pero PyTorch esta instalado sin CUDA: YOLO corre en CPU (varias veces mas lento).")
+            print(f"      -> {COMANDO_TORCH_CUDA}")
+        else:
+            print("[! ] Sin GPU NVIDIA: YOLO corre en CPU (usa el modo rapido para ver el sistema moverse).")
 
     # --- Configuracion ------------------------------------------------------------------
     error = validar_config_en_subproceso()
@@ -942,14 +985,20 @@ def procesar_video(forzar_pregunta_reemplazo: bool = True, ofrecer_dashboard: bo
    {est('2', 'info')}  En vivo, todos los cuadros   preciso, pero en CPU se ve en cámara lenta
    {est('3', 'info')}  Sin ventana                  solo la barra de progreso; lo más rápido para llenar la base""")
     modo = pedir("Opción (q en la ventana para detenerla)", "1").strip()
+    con_gpu = estado_gpu()[0] == "gpu"
     camara = str(vals.get("CAMARA", ""))
     comando = [PY, "-m", "aforo", "procesar"]
     if modo == "1":
         # Datos parciales: van a una camara aparte para no borrar ni mezclar los completos.
         camara = f"{camara}_vivo"
-        print(f"[!] En vivo se analiza 1 de cada ~5 cuadros: se pierden vehículos. Se guarda como «{camara}»,")
-        print("    aparte de tus datos completos. Para datos confiables usa la opción 2 o 3.")
-        comando += ["--camara", camara, "--tiempo-real", "--modelo", "datos/modelos/yolov8n.pt", "--imgsz", "640"]
+        comando += ["--camara", camara, "--tiempo-real"]
+        if con_gpu:
+            print(f"[!] En vivo se salta algún cuadro si el equipo no alcanza. Se guarda como «{camara}»,")
+            print("    aparte de tus datos completos. Para datos definitivos usa la opción 2 o 3.")
+        else:
+            print(f"[!] Sin GPU, en vivo se analiza 1 de cada ~5 cuadros: se pierden vehículos. Se guarda como «{camara}»,")
+            print("    aparte de tus datos completos. Para datos confiables usa la opción 2 o 3.")
+            comando += ["--modelo", "datos/modelos/yolov8n.pt", "--imgsz", "640"]
     else:
         if modo == "2":
             comando.append("--mostrar")

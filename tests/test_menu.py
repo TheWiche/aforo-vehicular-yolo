@@ -149,5 +149,37 @@ class DiagnosticoTest(unittest.TestCase):
         self.assertIsNone(menu.resumen_bd(Path("no_existe.db")))
 
 
+class EstadoGpuTest(unittest.TestCase):
+    """estado_gpu distingue GPU lista, GPU sin CUDA en PyTorch y ausencia de GPU (sin tocar el hardware)."""
+
+    @staticmethod
+    def _resultado(salida: str):
+        import subprocess
+        return subprocess.CompletedProcess([], 0, stdout=salida, stderr="")
+
+    def _con(self, torch_ok: str, nvidia_smi: str):
+        from unittest import mock
+
+        def falso(comando, **_):
+            if comando[0] == "nvidia-smi":
+                if not nvidia_smi:
+                    raise FileNotFoundError
+                return self._resultado(nvidia_smi)
+            return self._resultado(torch_ok)
+
+        with mock.patch.object(menu, "modulo_instalado", return_value=True), \
+                mock.patch.object(menu.subprocess, "run", side_effect=falso):
+            return menu.estado_gpu()
+
+    def test_torch_con_cuda_usa_la_gpu(self) -> None:
+        self.assertEqual(self._con("True\nNVIDIA GeForce RTX 2070 SUPER\n", ""), ("gpu", "NVIDIA GeForce RTX 2070 SUPER"))
+
+    def test_tarjeta_nvidia_pero_torch_sin_cuda_avisa_del_motivo(self) -> None:
+        self.assertEqual(self._con("False\n\n", "NVIDIA GeForce RTX 2070 SUPER\n"), ("cpu_con_gpu", "NVIDIA GeForce RTX 2070 SUPER"))
+
+    def test_sin_tarjeta_es_cpu(self) -> None:
+        self.assertEqual(self._con("False\n\n", ""), ("cpu", ""))
+
+
 if __name__ == "__main__":
     unittest.main()

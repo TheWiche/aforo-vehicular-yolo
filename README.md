@@ -157,11 +157,29 @@ en el mismo video 4K), o usa una GPU NVIDIA, o un video de 1080p o menos. El men
 
 **Ver el video a velocidad normal:** `python -m aforo procesar --tiempo-real` reproduce el video con el reloj
 (como un reproductor) y, si el modelo no alcanza, salta los cuadros que ya pasaron. Las horas y velocidades
-siguen siendo correctas porque cada cuadro conserva su número real. El costo es la precisión: medido en CPU
-con `yolov8n` a 640 px sobre 145 s de `Prueba1_optimizado.mp4`, contó 7 de los 14 vehículos que cuenta el modo
-normal y midió velocidad en 2 de 13 (las dos coincidieron con una diferencia de 0,2 km/h). Sirve para
-demostrar el sistema en vivo; para datos confiables usa el modo normal o una GPU. El menú guarda esa corrida
-en una cámara aparte (`<cámara>_vivo`) para no mezclarla con los datos completos.
+siguen siendo correctas porque cada cuadro conserva su número real. Medido sobre 145 s de
+`Prueba1_optimizado.mp4` contra el modo normal:
+
+| Equipo | Cuadros analizados | Vehículos contados | Diferencia de velocidad |
+|---|---|---|---|
+| CPU, `yolov8n` a 640 px | 1 de cada ~5 | 7 de 14 | 2 mediciones de 13 (±0,2 km/h) |
+| RTX 2070 SUPER, `yolov8s` a 960 px | 3 de cada 4 | 14 de 14 | 14 de 14, dentro de ±0,5 km/h |
+
+Sin GPU sirve solo para demostrar; con GPU es fiable. El menú guarda la corrida en vivo en una cámara aparte
+(`<cámara>_vivo`) para no mezclarla con los datos completos.
+
+### Usar la GPU NVIDIA
+
+`pip install torch` en Windows instala la versión **solo-CPU**, y YOLO corre varias veces más lento sin avisar.
+El diagnóstico del menú (opción 9) lo detecta. Para instalar la versión con CUDA (si tu driver soporta CUDA 13):
+
+```bash
+pip install --force-reinstall --no-deps torch==2.14.1+cu130 torchvision==0.29.1+cu130 --index-url https://download.pytorch.org/whl/cu130
+python -c "import torch; print(torch.cuda.is_available())"     # debe imprimir True
+```
+
+Con la GPU, `yolov8s` a 960 px procesa ~20 cuadros/s (en CPU, ~3). El límite pasa a ser el procesador
+(decodificar el video, redimensionar y filtrar cajas); la media precisión (FP16) no mejoró la velocidad.
 
 ## Documentación
 
