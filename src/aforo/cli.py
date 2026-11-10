@@ -41,6 +41,9 @@ def _parsear_argumentos(argv: Optional[List[str]] = None) -> argparse.Namespace:
     ap.add_argument("--modelo", type=Path, help="Pesos YOLO a usar, p. ej. datos/modelos/yolov8n.pt.")
     ap.add_argument("--dispositivo", type=str, help="'cpu', '0' (GPU CUDA) ... (por defecto: automatico).")
     ap.add_argument("--mostrar", action="store_true", help="Muestra una ventana en vivo (q para salir).")
+    ap.add_argument("--tiempo-real", action="store_true",
+                    help="Reproduce a la velocidad real del video saltando cuadros si hace falta "
+                         "(abre la ventana y no guarda video; algo menos preciso).")
     ap.add_argument("--imgsz", type=int, help="Tamano de entrada de YOLO en px (menor = mas rapido, p. ej. 640).")
     ap.add_argument("--sin-video", action="store_true", help="No guarda el video anotado (mas rapido).")
     ap.add_argument("--camara", type=str, help="Nombre de la camara guardado en la BD (sobrescribe CAMARA de config.py).")
@@ -70,8 +73,10 @@ def _aplicar_argumentos(config: AppConfig, args: argparse.Namespace) -> AppConfi
         det = dataclasses.replace(det, modelo=args.modelo.resolve())
     if args.dispositivo:
         det = dataclasses.replace(det, dispositivo=args.dispositivo)
-    if args.mostrar:
+    if args.mostrar or args.tiempo_real:
         vis = dataclasses.replace(vis, mostrar_ventana=True)
+    if args.tiempo_real:
+        vis = dataclasses.replace(vis, tiempo_real=True)
     nueva = dataclasses.replace(config, io=io, detector=det, visual=vis)
     nueva.validate()
     return nueva
@@ -101,6 +106,10 @@ def _imprimir_resumen(resumen: PipelineSummary) -> None:
     print(f"\n Alertas: {resumen.alertas_exceso} por exceso de velocidad, "
           f"{resumen.alertas_detenido} por trafico detenido")
     print(f" Frames: {resumen.frames_procesados} en {resumen.segundos_proceso:.1f} s")
+    if resumen.frames_saltados:
+        vistos = resumen.frames_procesados + resumen.frames_saltados
+        print(f" Tiempo real: se analizo 1 de cada {vistos / max(resumen.frames_procesados, 1):.1f} cuadros "
+              f"({resumen.frames_saltados} saltados para no atrasarse)")
     print(f" Video : {resumen.video_salida or '(no se guardo video: modo rapido)'}")
     print(f" BD    : {resumen.db_ruta}  ({resumen.filas_db} cruces insertados, camara '{resumen.camara}')")
     print(linea)

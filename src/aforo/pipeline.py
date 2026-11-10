@@ -27,7 +27,7 @@ from contextlib import nullcontext
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterator, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -65,6 +65,7 @@ class VideoError(RuntimeError):
 class PipelineSummary:
     """Resumen final de la ejecucion (lo imprime aforo procesar)."""
     frames_procesados: int = 0
+    frames_saltados: int = 0   # solo en tiempo real: cuadros que no se analizaron para no atrasarse
     segundos_proceso: float = 0.0
     conteo_por_clase: Dict[str, int] = field(default_factory=dict)
     conteo_por_sentido: Dict[str, int] = field(default_factory=dict)
@@ -188,6 +189,8 @@ class AforoPipeline:
         control_via: Optional[_ControlVia] = None
         alertas_exceso = 0
         frames = 0
+        ultimo_idx = -1
+        tiempo_real = cfg.visual.tiempo_real
         t_inicio = time.perf_counter()
 
         # Hora real del primer frame: el `momento` de cada cruce se calcula a partir de ella.
@@ -212,11 +215,14 @@ class AforoPipeline:
 
                 # Con video_salida=None (modo rapido) no se escribe ni se codifica video: en 4K
                 # eso es una parte grande del tiempo por frame.
-                destino = (sv.VideoSink(str(cfg.io.video_salida), info) if cfg.io.video_salida is not None
-                           else nullcontext())
+                # En tiempo real tampoco: al saltar cuadros el archivo quedaria acelerado.
+                guardar_video = cfg.io.video_salida is not None and not tiempo_real
+                if tiempo_real and cfg.io.video_salida is not None:
+                    logger.warning("En tiempo real no se guarda el video anotado (se saltan cuadros).")
+                destino = sv.VideoSink(str(cfg.io.video_salida), info) if guardar_video else nullcontext()
                 with destino as sink, \
                         tqdm(total=info.total_frames, unit="frame", desc="Procesando") as barra:
-                    for idx, frame in enumerate(sv.get_video_frames_generator(str(cfg.io.video_entrada))):
+                    for idx, frame in self._cuadros(cfg.io.video_entrada, info.fps, tiempo_real):
                         # 1) Deteccion  2) Tracking  3) Conteo  4) Velocidad
                         detecciones = detector.detect(frame)
                         seguidos, movimientos = tracker.update(detecciones, frame_idx=idx)
@@ -267,7 +273,8 @@ class AforoPipeline:
                             sink.write_frame(anotado)
                         frames += 1
                         barra.set_postfix(total=counter.total, refresh=False)
-                        barra.update(1)
+                        barra.update(idx - ultimo_idx)      # incluye los cuadros saltados
+                        ultimo_idx = idx
 
                         if cfg.visual.mostrar_ventana and not self._mostrar(anotado):
                             logger.info("Interrumpido por el usuario (tecla 'q').")
@@ -283,6 +290,7 @@ class AforoPipeline:
 
         return PipelineSummary(
             frames_procesados=frames,
+            frames_saltados=max(0, ultimo_idx + 1 - frames),
             segundos_proceso=time.perf_counter() - t_inicio,
             conteo_por_clase={detector.class_names[c]: n for c, n in counter.counts_by_class.items()},
             conteo_por_sentido={
@@ -290,7 +298,7 @@ class AforoPipeline:
             },
             total=counter.total,
             mediciones=mediciones,
-            video_salida=cfg.io.video_salida,
+            video_salida=None if tiempo_real else cfg.io.video_salida,
             db_ruta=cfg.io.db_ruta,
             camara=cfg.io.camara,
             filas_db=filas_db,
@@ -299,6 +307,47 @@ class AforoPipeline:
         )
 
     # -------------------------------------------------------------- interno
+    @staticmethod
+    def _cuadros(ruta: Path, fps: float, tiempo_real: bool) -> Iterator[Tuple[int, np.ndarray]]:
+        """
+        Entrega (indice, cuadro) del video.
+
+        Modo normal: todos los cuadros, uno tras otro (lo mas preciso; tarda lo que tarde).
+
+        Modo tiempo real: el video avanza con el reloj, como en un reproductor. Si analizar un
+        cuadro tomo mas que 1/FPS, los cuadros que "ya pasaron" se saltan sin analizarlos
+        (`grab()` los decodifica pero no los entrega); si la maquina va sobrada, se espera.
+        El indice que se entrega es SIEMPRE el del video original, asi que las horas de los
+        cruces y las velocidades (distancia / tiempo entre lineas) siguen siendo correctas:
+        solo se pierde resolucion temporal, no se distorsiona el tiempo.
+        """
+        if not tiempo_real:
+            yield from enumerate(sv.get_video_frames_generator(str(ruta)))
+            return
+        captura = cv2.VideoCapture(str(ruta))
+        if not captura.isOpened():
+            raise VideoError(f"No se pudo abrir el video '{ruta}'.")
+        try:
+            idx = -1
+            inicio = time.perf_counter()
+            while True:
+                # Cuadro que un reproductor estaria mostrando en este instante.
+                objetivo = int((time.perf_counter() - inicio) * fps)
+                while idx + 1 < objetivo:              # atrasados: saltar hasta alcanzar al reloj
+                    if not captura.grab():
+                        return
+                    idx += 1
+                espera = (idx + 1) / fps - (time.perf_counter() - inicio)
+                if espera > 0:                         # adelantados: esperar al siguiente cuadro
+                    time.sleep(espera)
+                ok, frame = captura.read()
+                if not ok:
+                    return
+                idx += 1
+                yield idx, frame
+        finally:
+            captura.release()
+
     @staticmethod
     def _leer_info_video(ruta: Path) -> sv.VideoInfo:
         """Valida que el video exista y lee su resolucion, FPS y numero de frames."""

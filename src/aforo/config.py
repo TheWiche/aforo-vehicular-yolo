@@ -265,6 +265,8 @@ class VisualConfig:
     dibujar_estela: bool
     largo_estela: int
     colores_clase: Dict[int, str]
+    # Reproduce el video a su velocidad real: si el modelo no alcanza, se saltan cuadros.
+    tiempo_real: bool = False
 
 
 @dataclass(frozen=True)

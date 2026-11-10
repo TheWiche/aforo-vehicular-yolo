@@ -936,19 +936,31 @@ def procesar_video(forzar_pregunta_reemplazo: bool = True, ofrecer_dashboard: bo
         if not confirmar("Continuar", True):
             return False
 
+    print(f"""
+  {est('Cómo quieres procesarlo', 'negrita')}
+   {est('1', 'info')}  En vivo a velocidad normal   se ve como un video; salta cuadros y pierde vehículos (demo)
+   {est('2', 'info')}  En vivo, todos los cuadros   preciso, pero en CPU se ve en cámara lenta
+   {est('3', 'info')}  Sin ventana                  solo la barra de progreso; lo más rápido para llenar la base""")
+    modo = pedir("Opción (q en la ventana para detenerla)", "1").strip()
     camara = str(vals.get("CAMARA", ""))
+    comando = [PY, "-m", "aforo", "procesar"]
+    if modo == "1":
+        # Datos parciales: van a una camara aparte para no borrar ni mezclar los completos.
+        camara = f"{camara}_vivo"
+        print(f"[!] En vivo se analiza 1 de cada ~5 cuadros: se pierden vehículos. Se guarda como «{camara}»,")
+        print("    aparte de tus datos completos. Para datos confiables usa la opción 2 o 3.")
+        comando += ["--camara", camara, "--tiempo-real", "--modelo", "datos/modelos/yolov8n.pt", "--imgsz", "640"]
+    else:
+        if modo == "2":
+            comando.append("--mostrar")
+        if confirmar("Modo rápido: YOLOv8n a 640 px y sin guardar el video (~3 veces más rápido, algo menos preciso)", modo == "3"):
+            comando += ["--modelo", "datos/modelos/yolov8n.pt", "--imgsz", "640", "--sin-video"]
     filas = resumen_bd(ruta_absoluta(str(vals.get("DB_RUTA", "datos/db/database.db")))) or []
     previos = next((n for c, n, *_ in filas if c == camara), 0)
-    comando = [PY, "-m", "aforo", "procesar"]
     if previos:
         print(f"[!] La camara '{camara}' ya tiene {previos} cruces en la base de datos.")
         if forzar_pregunta_reemplazo and confirmar("Borrarlos antes de procesar (evita duplicados)", True):
             comando.append("--reemplazar")
-    if confirmar("Ver el modelo trabajando en vivo en una ventana (tecla q para detenerla)", True):
-        comando.append("--mostrar")
-    print("\nEn CPU, YOLOv8s a 960 px con video 4K va a ~3 cuadros/s (se ve a tirones).")
-    if confirmar("Modo rapido: YOLOv8n a 640 px y sin guardar el video (~3 veces mas rapido, algo menos preciso)", False):
-        comando += ["--modelo", "datos/modelos/yolov8n.pt", "--imgsz", "640", "--sin-video"]
     estimado = info[3] / max(info[2], 1)
     print(f"\nVideo: {activo.name} {info[0]}x{info[1]}, {estimado:.0f} s ({info[3]} frames). "
           "En CPU puede tardar varios minutos.")

@@ -155,6 +155,14 @@ en vivo se ve a tirones; el cuello de botella es la red neuronal. Para ir más r
 `python -m aforo procesar --mostrar --sin-video --imgsz 640 --modelo datos/modelos/yolov8n.pt` (~8 cuadros/s
 en el mismo video 4K), o usa una GPU NVIDIA, o un video de 1080p o menos. El menú ofrece este "modo rápido".
 
+**Ver el video a velocidad normal:** `python -m aforo procesar --tiempo-real` reproduce el video con el reloj
+(como un reproductor) y, si el modelo no alcanza, salta los cuadros que ya pasaron. Las horas y velocidades
+siguen siendo correctas porque cada cuadro conserva su número real. El costo es la precisión: medido en CPU
+con `yolov8n` a 640 px sobre 145 s de `Prueba1_optimizado.mp4`, contó 7 de los 14 vehículos que cuenta el modo
+normal y midió velocidad en 2 de 13 (las dos coincidieron con una diferencia de 0,2 km/h). Sirve para
+demostrar el sistema en vivo; para datos confiables usa el modo normal o una GPU. El menú guarda esa corrida
+en una cámara aparte (`<cámara>_vivo`) para no mezclarla con los datos completos.
+
 ## Documentación
 
 | Documento | Contenido |
