@@ -16,3 +16,6 @@ db/*
 !output/.gitkeep
 !models/.gitkeep
 !db/.gitkeep
+
+# Archivos de trabajo de la skill de diseno
+.taste-skill/
