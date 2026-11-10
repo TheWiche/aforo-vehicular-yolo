@@ -49,7 +49,7 @@ ejecuta `python main.py`. **Antes de interpretar velocidades hay que calibrar** 
 distancia real (siguiente sección): con valores de ejemplo los resultados no tienen sentido.
 
 Opciones de `main.py` (sobrescriben `config.py` solo en esa ejecución): `--video`, `--salida`,
-`--modelo`, `--dispositivo`, `--mostrar`, `--camara NOMBRE`, `--reemplazar`
+`--modelo`, `--imgsz`, `--sin-video`, `--dispositivo`, `--mostrar`, `--camara NOMBRE`, `--reemplazar`
 (borra de la BD los datos previos de esa cámara para repetir una prueba sin duplicar filas).
 
 Resultados: `output/salida.mp4` (video anotado) y las tablas de `db/database.db`. Los pesos de
@@ -159,3 +159,10 @@ docs/                  Informe y documentación
   medida (ver caso 5 en [`docs/CASOS_DE_FALLA.md`](docs/CASOS_DE_FALLA.md)).
 - Los videos, pesos y la base de datos no se versionan (`.gitignore`); se regeneran con los
   comandos de arriba.
+
+## Velocidad de procesamiento
+
+En CPU, con YOLOv8s a 960 px y un video 4K el sistema procesa ~2.8 cuadros/s (medido), por eso la ventana
+en vivo se ve a tirones; el cuello de botella es la red neuronal. Para ir más rápido:
+`python main.py --mostrar --sin-video --imgsz 640 --modelo models/yolov8n.pt` (~8 cuadros/s medidos en el mismo
+video 4K), o usa una GPU NVIDIA, o un video de 1080p o menos. El menú ofrece este "modo rápido".

@@ -795,6 +795,9 @@ def procesar_video(forzar_pregunta_reemplazo: bool = True, ofrecer_dashboard: bo
             comando.append("--reemplazar")
     if confirmar("Ver el modelo trabajando en vivo en una ventana (tecla q para detenerla)", True):
         comando.append("--mostrar")
+    print("\nEn CPU, YOLOv8s a 960 px con video 4K va a ~3 cuadros/s (se ve a tirones).")
+    if confirmar("Modo rapido: YOLOv8n a 640 px y sin guardar el video (~3 veces mas rapido, algo menos preciso)", False):
+        comando += ["--modelo", "models/yolov8n.pt", "--imgsz", "640", "--sin-video"]
     estimado = info[3] / max(info[2], 1)
     print(f"\nVideo: {activo.name} {info[0]}x{info[1]}, {estimado:.0f} s ({info[3]} frames). "
           "En CPU puede tardar varios minutos.")

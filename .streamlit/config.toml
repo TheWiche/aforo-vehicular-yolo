@@ -2,10 +2,10 @@
 # desde la carpeta del proyecto).
 [theme]
 base = "dark"
-primaryColor = "#3987e5"
-backgroundColor = "#0d0d0d"
-secondaryBackgroundColor = "#1a1a19"
-textColor = "#f0efec"
+primaryColor = "#4a8ad6"
+backgroundColor = "#171719"
+secondaryBackgroundColor = "#131217"
+textColor = "#ffffff"
 
 [client]
 toolbarMode = "minimal"      # oculta el boton "Deploy"

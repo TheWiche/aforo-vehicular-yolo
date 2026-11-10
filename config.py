@@ -190,7 +190,7 @@ def _resolver_ruta(ruta: str) -> Path:
 class IOConfig:
     """Rutas de video, base de datos y datos de la camara."""
     video_entrada: Path
-    video_salida: Path
+    video_salida: Optional[Path]      # None = no guardar video (modo rapido)
     db_ruta: Path
     camara: str
     fecha_inicio: Optional[datetime]    # None = hora actual al iniciar la ejecucion

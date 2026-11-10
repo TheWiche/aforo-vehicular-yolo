@@ -41,6 +41,8 @@ def _parsear_argumentos(argv: Optional[List[str]] = None) -> argparse.Namespace:
     ap.add_argument("--modelo", type=Path, help="Pesos YOLO a usar, p. ej. models/yolov8n.pt.")
     ap.add_argument("--dispositivo", type=str, help="'cpu', '0' (GPU CUDA) ... (por defecto: automatico).")
     ap.add_argument("--mostrar", action="store_true", help="Muestra una ventana en vivo (q para salir).")
+    ap.add_argument("--imgsz", type=int, help="Tamano de entrada de YOLO en px (menor = mas rapido, p. ej. 640).")
+    ap.add_argument("--sin-video", action="store_true", help="No guarda el video anotado (mas rapido).")
     ap.add_argument("--camara", type=str, help="Nombre de la camara guardado en la BD (sobrescribe CAMARA de config.py).")
     ap.add_argument("--reemplazar", action="store_true",
                     help="Borra de la BD los cruces previos de esta camara antes de empezar (evita duplicados al repetir una prueba).")
@@ -60,6 +62,10 @@ def _aplicar_argumentos(config: AppConfig, args: argparse.Namespace) -> AppConfi
         io = dataclasses.replace(io, video_salida=args.salida.resolve())
     if args.camara:
         io = dataclasses.replace(io, camara=args.camara.strip())
+    if args.sin_video:
+        io = dataclasses.replace(io, video_salida=None)
+    if args.imgsz:
+        det = dataclasses.replace(det, tamano_imagen=args.imgsz)
     if args.modelo:
         det = dataclasses.replace(det, modelo=args.modelo.resolve())
     if args.dispositivo:
@@ -95,7 +101,7 @@ def _imprimir_resumen(resumen: PipelineSummary) -> None:
     print(f"\n Alertas: {resumen.alertas_exceso} por exceso de velocidad, "
           f"{resumen.alertas_detenido} por trafico detenido")
     print(f" Frames: {resumen.frames_procesados} en {resumen.segundos_proceso:.1f} s")
-    print(f" Video : {resumen.video_salida}")
+    print(f" Video : {resumen.video_salida or '(no se guardo video: modo rapido)'}")
     print(f" BD    : {resumen.db_ruta}  ({resumen.filas_db} cruces insertados, camara '{resumen.camara}')")
     print(linea)
 

@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import logging
 import time
+from contextlib import nullcontext
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -180,7 +181,8 @@ class AforoPipeline:
             limite_kmh=cfg.alertas.limite_velocidad_kmh,
         )
 
-        cfg.io.video_salida.parent.mkdir(parents=True, exist_ok=True)
+        if cfg.io.video_salida is not None:
+            cfg.io.video_salida.parent.mkdir(parents=True, exist_ok=True)
         mediciones: List[SpeedMeasurement] = []
         registrador: Optional[RegistradorCruces] = None
         control_via: Optional[_ControlVia] = None
@@ -208,7 +210,11 @@ class AforoPipeline:
                                        info.fps, info.total_frames)
                 control_via =_ControlVia(cfg, db, (info.width, info.height), inicio_video)
 
-                with sv.VideoSink(str(cfg.io.video_salida), info) as sink, \
+                # Con video_salida=None (modo rapido) no se escribe ni se codifica video: en 4K
+                # eso es una parte grande del tiempo por frame.
+                destino = (sv.VideoSink(str(cfg.io.video_salida), info) if cfg.io.video_salida is not None
+                           else nullcontext())
+                with destino as sink, \
                         tqdm(total=info.total_frames, unit="frame", desc="Procesando") as barra:
                     for idx, frame in enumerate(sv.get_video_frames_generator(str(cfg.io.video_entrada))):
                         # 1) Deteccion  2) Tracking  3) Conteo  4) Velocidad
@@ -251,10 +257,14 @@ class AforoPipeline:
                         estado = control_via.procesar(frame, seguidos, idx, info.fps)
 
                         # 7) Dibujo y escritura del video anotado
-                        anotado = visualizer.render(
-                            frame, seguidos, counter, speed, nuevos_cruces, estado_trafico=estado.value
-                        )
-                        sink.write_frame(anotado)
+                        # (sin video y sin ventana no hay nada que dibujar: se ahorra el trabajo)
+                        anotado = frame
+                        if sink is not None or cfg.visual.mostrar_ventana:
+                            anotado = visualizer.render(
+                                frame, seguidos, counter, speed, nuevos_cruces, estado_trafico=estado.value
+                            )
+                        if sink is not None:
+                            sink.write_frame(anotado)
                         frames += 1
                         barra.set_postfix(total=counter.total, refresh=False)
                         barra.update(1)
