@@ -23,7 +23,7 @@ licencias: [`DATOS.md`](DATOS.md).
 Detalle con fórmulas y archivos: [`TECNICAS.md`](TECNICAS.md).
 
 ## 4. Base de datos
-SQLite (`db/database.db`) con tablas `cruces`, `alertas`, `lecturas_trafico`, `ejecuciones`,
+SQLite (`datos/db/database.db`) con tablas `cruces`, `alertas`, `lecturas_trafico`, `ejecuciones`,
 `metricas` y la vista `v_aforo_por_minuto`; modelo ER, DDL y diccionario en
 [`MODELO_DATOS.md`](MODELO_DATOS.md). No hay CSV como almacenamiento.
 
@@ -33,7 +33,7 @@ video ─► YOLOv8 ─► ByteTrack ─► cruce de línea ─► INSERT cruces
             │                └► tiempo A→B ─► velocidad ─► alerta de exceso ┤
             └► resta de fondo ─► umbral ─► morfología ─► ¿detenido? ─► alerta ┤
                                                                             ▼
-                                                           SQLite ─► dashboard Streamlit
+                                                           SQLite ─► dashboard web (FastAPI + interfaz propia)
 ```
 Entrada: video (archivo). Salida útil para el cliente: **aforo por tipo y por minuto, velocidad
 media por vehículo, alertas de exceso y de tráfico detenido, estado de la vía**, consultables en el
@@ -59,11 +59,11 @@ distancia incorrecta. Detalle: [`CASOS_DE_FALLA.md`](CASOS_DE_FALLA.md).
 ## 8. Reproducibilidad
 Repositorio ordenado, `requirements.txt` con versiones exactas, pruebas unitarias (92) y flujo
 completo en el [`README`](../README.md): `pip install -r requirements.txt` →
-`python descargar_videos.py` → `python main.py ...` → `streamlit run dashboard.py` →
-`python evaluar.py ...`.
+`python -m aforo descargar` → `python -m aforo procesar ...` → `python -m aforo dashboard` →
+`python -m aforo evaluar ...`.
 
 ## 9. Trabajo propio
-Se usaron librerías (Ultralytics, `trackers`, `supervision`, OpenCV, Streamlit, Plotly) y asistencia
+Se usaron librerías (Ultralytics, `trackers`, `supervision`, OpenCV, FastAPI) y asistencia
 de IA como apoyo. El conteo por intersección de segmentos, la velocidad, el análisis de movimiento,
 las alertas, la base de datos, el dashboard y la evaluación son código del proyecto y están
 comentados en español; [`GUIA_SUSTENTACION.md`](GUIA_SUSTENTACION.md) resume qué hace cada parte y

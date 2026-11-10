@@ -4,13 +4,13 @@
 
 | Fuente | Tipo | Uso | Estado |
 |---|---|---|---|
-| Videos grabados por el equipo (`videos/propios/`) | **Propios** | Calibración, verdad de terreno y métricas finales | **Pendiente de grabar** (ver protocolo abajo) |
+| Videos grabados por el equipo (`datos/videos/propios/`) | **Propios** | Calibración, verdad de terreno y métricas finales | **Pendiente de grabar** (ver protocolo abajo) |
 | `autopista_1.mp4` | Público | Desarrollo y pruebas de regresión | Descargado con `descargar_videos.py` |
 | `autopista_2.mp4` | Público | Prueba de estrés (tráfico denso) y casos de falla | Descargado con `descargar_videos.py` |
 | `carretera_3.mp4` | Público | Tráfico moderado | Descargado con `descargar_videos.py` |
 
 El requisito 2 exige que **al menos una parte de los datos sea propia**: los videos de
-`videos/propios/` deben grabarlos los integrantes. Hasta entonces, las métricas calculadas
+`datos/videos/propios/` deben grabarlos los integrantes. Hasta entonces, las métricas calculadas
 sobre videos públicos son provisionales.
 
 ## Fuentes y citas
@@ -24,7 +24,7 @@ sobre videos públicos son provisionales.
 | ByteTrack | Zhang, Y. et al. (2022). *ByteTrack: Multi-Object Tracking by Associating Every Detection Box*. ECCV. | Implementación vía paquete `trackers` de Roboflow. |
 
 > Los videos públicos **no se suben al repositorio** (`.gitignore`) y se obtienen con
-> `python descargar_videos.py`. Los pesos se descargan solos en `models/`.
+> `python -m aforo descargar`. Los pesos se descargan solos en `datos/modelos/`.
 
 ## Protocolo para grabar los videos propios
 
@@ -42,16 +42,16 @@ modo que haya suficientes vehículos para contar y medir.
    del equipo a velocidades conocidas (p. ej. 20, 30, 40, 50 km/h con el velocímetro verificado
    con GPS del celular) o cronometrar vehículos reales sobre la distancia medida
    (`v = d / t`). Registrar hora y velocidad de cada pasada.
-5. **Guardar** los archivos en `videos/propios/` con nombre descriptivo
+5. **Guardar** los archivos en `datos/videos/propios/` con nombre descriptivo
    (`corredor_manana_01.mp4`). Anotar fecha, hora de inicio (se usa como `FECHA_INICIO_VIDEO`),
    clima y ubicación en una nota junto al video.
 6. **Privacidad:** grabar en vía pública, sin enfocar rostros ni placas de cerca; no publicar los
    videos. Si el video se muestra en el informe, difuminar placas.
 7. **Verdad de terreno:** con cada video correr
-   `python anotar_verdad_terreno.py --video videos/propios/<video>.mp4 --camara <nombre>` y,
+   `python -m aforo anotar --video datos/videos/propios/<video>.mp4 --camara <nombre>` y,
    si hay velocidades de referencia, agregarlas al JSON generado
-   (`evaluacion/<nombre>.json`). Luego `python main.py ... --camara <nombre> --reemplazar` y
-   `python evaluar.py --camara <nombre>`.
+   (`datos/evaluacion/<nombre>.json`). Luego `python -m aforo procesar ... --camara <nombre> --reemplazar` y
+   `python -m aforo evaluar --camara <nombre>`.
 
 ## Datos que NO se usan para entrenar
 

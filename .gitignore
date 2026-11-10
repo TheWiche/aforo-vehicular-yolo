@@ -1,21 +1,21 @@
 __pycache__/
 *.pyc
+*.egg-info/
 .venv/
 venv/
 .vscode/
+.taste-skill/
 
-# Datos pesados (se generan o los aporta el usuario)
-videos/*
-output/*
-models/*
-db/*
+# Datos de ejecucion (los regenera el usuario o los comandos del README)
+datos/videos/*
+datos/modelos/*
+datos/db/*
+datos/salidas/*
 *.pt
 
 # Mantener las carpetas vacias en el repositorio
-!videos/.gitkeep
-!output/.gitkeep
-!models/.gitkeep
-!db/.gitkeep
-
-# Archivos de trabajo de la skill de diseno
-.taste-skill/
+!datos/videos/.gitkeep
+!datos/modelos/.gitkeep
+!datos/db/.gitkeep
+!datos/salidas/.gitkeep
+# datos/evaluacion/ SI se versiona: contiene la verdad de terreno (JSON anotado a mano)

@@ -1,0 +1,24 @@
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--fondo); color: var(--tinta);
+  font: 400 var(--fs-cuerpo)/1.5 var(--fuente);
+  font-variant-numeric: tabular-nums;          /* los digitos no "bailan" al actualizarse */
+  -webkit-font-smoothing: antialiased;
+}
+h1, h2, h3, p { margin: 0; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+table { border-collapse: collapse; width: 100%; }
+[hidden] { display: none !important; }
+
+:focus-visible { outline: 1px solid var(--acento); outline-offset: 3px; border-radius: 2px; }
+
+.saltar {
+  position: absolute; left: 12px; top: -48px; background: var(--elevado); color: var(--tinta);
+  padding: 8px 12px; border-radius: var(--radio); z-index: 10; transition: top var(--duracion-rapida) var(--suave);
+}
+.saltar:focus { top: 8px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}

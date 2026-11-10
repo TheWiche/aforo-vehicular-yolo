@@ -14,13 +14,13 @@ from pathlib import Path
 from typing import List
 
 # Permite importar los modulos de la raiz del proyecto desde /tests.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import _setup  # noqa: F401  (agrega src/ y la raiz al sys.path)
 
-from config import ConfigError, CounterConfig, SpeedConfig, cargar_configuracion  # noqa: E402
-from geometry import segment_intersection  # noqa: E402
-from line_counter import LineCounter  # noqa: E402
-from speed_estimator import SpeedEstimator  # noqa: E402
-from tracker import Movement  # noqa: E402
+from aforo.config import ConfigError, CounterConfig, SpeedConfig, cargar_configuracion  # noqa: E402
+from aforo.analitica.geometry import segment_intersection  # noqa: E402
+from aforo.analitica.line_counter import LineCounter  # noqa: E402
+from aforo.analitica.speed_estimator import SpeedEstimator  # noqa: E402
+from aforo.vision.tracker import Movement  # noqa: E402
 
 FPS = 25.0
 
@@ -149,7 +149,7 @@ class ConfigTest(unittest.TestCase):
 
     def test_fecha_inicio_valida_e_invalida(self) -> None:
         from datetime import datetime
-        from config import _parsear_fecha
+        from aforo.config import _parsear_fecha
         self.assertEqual(_parsear_fecha("2026-11-09 08:30:00"), datetime(2026, 11, 9, 8, 30))
         self.assertIsNone(_parsear_fecha(None))
         with self.assertRaises(ConfigError):

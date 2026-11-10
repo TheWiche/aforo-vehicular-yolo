@@ -1,0 +1,47 @@
+/* Tokens de diseno: estilo "terminal de datos" (pantalla de monitoreo, sesiones largas).
+   Tarjetas MAS oscuras que el fondo, bordes de 1 px, sin sombras ni degradados, color solo
+   en los datos y un unico acento (azul) usado como linea de 1 px en lo seleccionado. */
+:root {
+  color-scheme: dark;
+
+  /* superficies */
+  --fondo: #171719;
+  --superficie: #131217;
+  --elevado: #212023;
+  --borde: #222224;
+  --regla: #1b1a1f;
+  --control: #3a3a3e;
+
+  /* texto (todos >= 4.5:1 sobre la superficie) */
+  --tinta: #ffffff;
+  --tinta-2: #bdbdc0;
+  --tinta-suave: #8a8c92;
+
+  /* color: solo datos y estados */
+  --acento: #4a8ad6;
+  --serie: #f2f2f3;
+  --alerta: #d9a441;
+  --negativo: #e5566f;
+  --fluido: #6b6e76;
+  --rejilla: #2b2b2b;
+
+  /* tipografia */
+  --fuente: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fs-titulo: 26px;
+  --fs-seccion: 16px;
+  --fs-cuerpo: 13px;
+  --fs-peq: 12px;
+
+  /* espacio (una sola separacion horizontal y vertical) */
+  --sep: 24px;
+  --relleno: 32px;
+  --radio: 6px;
+  --alto-fila: 42px;
+  --alto-barra: 52px;
+
+  /* movimiento: escala de transiciones del curso (transitions.dev) */
+  --duracion-rapida: 250ms;
+  --duracion-media: 350ms;
+  --duracion-lenta: 400ms;
+  --suave: cubic-bezier(0.22, 1, 0.36, 1);
+}

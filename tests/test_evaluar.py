@@ -15,10 +15,10 @@ import unittest
 from datetime import datetime, timedelta
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import _setup  # noqa: F401  (agrega src/ y la raiz al sys.path)
 
-from db import CrucesDB  # noqa: E402
-from evaluar import (  # noqa: E402
+from aforo.persistencia.db import CrucesDB  # noqa: E402
+from aforo.evaluacion.evaluar import (  # noqa: E402
     Evento,
     calcular_metricas,
     cargar_eventos_sistema,

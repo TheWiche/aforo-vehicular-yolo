@@ -1,6 +1,6 @@
 """
 Pruebas de la capa de base de datos (db.py). Usan una base SQLite temporal, no
-tocan db/database.db.
+tocan datos/db/database.db.
 
 Ejecutar:  python -m unittest discover -s tests -v
 """
@@ -14,9 +14,9 @@ import unittest
 from datetime import datetime
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import _setup  # noqa: F401  (agrega src/ y la raiz al sys.path)
 
-from db import CrucesDB, RegistradorCruces  # noqa: E402
+from aforo.persistencia.db import CrucesDB, RegistradorCruces  # noqa: E402
 
 T0 = datetime(2026, 11, 9, 8, 0, 0)
 
@@ -121,7 +121,7 @@ class BaseDatosTest(unittest.TestCase):
             self.assertEqual(db.contar("b"), 1)
 
     def test_un_lector_ve_los_datos_mientras_el_escritor_sigue_abierto(self) -> None:
-        # Es lo que hace el dashboard mientras main.py procesa un video (modo WAL).
+        # Es lo que hace el dashboard mientras aforo procesar procesa un video (modo WAL).
         with CrucesDB(self.ruta) as db:
             db.insertar_cruce(1, "Auto", T0, 40.0, "cam")
             self.assertEqual(self._leer("SELECT COUNT(*) FROM cruces"), [(1,)])

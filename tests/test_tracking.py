@@ -17,13 +17,13 @@ from typing import List, Tuple
 import numpy as np
 import supervision as sv
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import _setup  # noqa: F401  (agrega src/ y la raiz al sys.path)
 
-from config import CounterConfig, cargar_configuracion  # noqa: E402
-from db import CrucesDB, RegistradorCruces  # noqa: E402
-from line_counter import LineCounter  # noqa: E402
-from tracker import VehicleTracker  # noqa: E402
-from verificar_tracking import AuditorTracking  # noqa: E402
+from aforo.config import CounterConfig, cargar_configuracion  # noqa: E402
+from aforo.persistencia.db import CrucesDB, RegistradorCruces  # noqa: E402
+from aforo.analitica.line_counter import LineCounter  # noqa: E402
+from aforo.vision.tracker import VehicleTracker  # noqa: E402
+from aforo.evaluacion.verificar_tracking import AuditorTracking  # noqa: E402
 
 FPS = 25.0
 NOMBRES = {2: "Auto", 3: "Moto", 5: "Bus", 7: "Camion"}

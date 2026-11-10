@@ -2,60 +2,80 @@
 
 Detecta **auto, moto, bus y camión** en video, les asigna un ID único, los **cuenta** al cruzar una
 línea virtual, estima su **velocidad (km/h)**, vigila el **estado del tráfico** y genera **alertas**
-(exceso de velocidad y tráfico detenido). Todo se guarda en una base de datos **SQLite** y se
-consulta en un dashboard Streamlit.
+(exceso de velocidad y tráfico detenido). Todo se guarda en **SQLite** y un **dashboard web propio**
+(API FastAPI + interfaz HTML/CSS/JS) lo consulta con SQL.
 
-Informe y documentación en [`docs/`](docs/): contexto del cliente, datos, técnicas del curso,
-modelo de datos, métricas, casos de falla y guía de sustentación (ver [Documentación](#documentación)).
+Informe y documentación en [`docs/`](docs/) (contexto del cliente, datos, técnicas del curso,
+modelo de datos, métricas, casos de falla y guía de sustentación).
 
 ## Instalación
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate            # Windows  (Linux/Mac: source .venv/bin/activate)
-pip install -r requirements.txt
+pip install -r requirements.txt   # instala las dependencias y el paquete `aforo` (modo editable)
 ```
 
 > Probado con Python 3.12. Para usar GPU NVIDIA instala antes la build CUDA de PyTorch
-> (ver pytorch.org) y luego el resto de `requirements.txt`.
+> (ver pytorch.org) y luego el resto.
 
-## Menú interactivo (la forma más fácil de probar)
+## Uso rápido
 
-```bash
-python menu.py
-```
-
-Menú en la terminal que **revisa primero qué tienes y qué te falta** (dependencias, pesos, videos,
-calibración, base de datos, verdad de terreno) y, antes de cada acción, comprueba sus requisitos y
-ofrece resolverlos (instalar dependencias, descargar videos, calibrar). Permite:
-
-- **Prueba rápida guiada:** descarga `autopista_1`, aplica su calibración probada, procesa y abre el dashboard.
-- **Configuración (tipo CRUD sobre `config.py`):** ver y editar cada parámetro con validación de tipo y
-  rango; si un cambio dejaría la configuración inválida, se revierte solo.
-- **Videos:** descargar, elegir el video activo y calibrar las líneas haciendo clic sobre un frame.
-- **Procesar, dashboard, base de datos** (resumen, cruces, alertas, borrar una cámara), **evaluación** y
-  **pruebas unitarias**.
-
-## Ejecutar (flujo completo, sin menú)
+Todo cuelga de un solo comando, `python -m aforo`:
 
 ```bash
-python descargar_videos.py                                                        # 1. videos de prueba -> videos/
-python main.py --video videos/autopista_1.mp4 --camara autopista_1 --reemplazar   # 2. procesa y guarda en la BD
-streamlit run dashboard.py                                                        # 3. dashboard (lee la BD con SELECT)
+python -m aforo                       # menú interactivo (revisa qué tienes y qué te falta)
+python -m aforo --help                # lista de comandos
 ```
 
-Con tu propio video: cópialo a `videos/entrada.mp4` (o cambia `VIDEO_ENTRADA` en `config.py`) y
-ejecuta `python main.py`. **Antes de interpretar velocidades hay que calibrar** las líneas y la
-distancia real (siguiente sección): con valores de ejemplo los resultados no tienen sentido.
+| Comando | Qué hace |
+|---|---|
+| `python -m aforo` | **Menú interactivo**: diagnóstico, configuración, videos, procesar, base de datos, evaluación |
+| `python -m aforo descargar` | Descarga videos de tráfico de prueba a `datos/videos/` |
+| `python -m aforo calibrar` | Obtiene coordenadas de las líneas haciendo clic en un frame |
+| `python -m aforo procesar` | Procesa un video → detección, conteo, velocidad, alertas → base de datos |
+| `python -m aforo dashboard` | Abre el dashboard web en http://localhost:8501 |
+| `python -m aforo anotar` / `evaluar` | Verdad de terreno a mano y métricas (precisión, recall, F1, MAE) |
+| `python -m aforo auditar` | Audita la unicidad y estabilidad de los IDs del tracker |
 
-Opciones de `main.py` (sobrescriben `config.py` solo en esa ejecución): `--video`, `--salida`,
-`--modelo`, `--imgsz`, `--sin-video`, `--dispositivo`, `--mostrar`, `--camara NOMBRE`, `--reemplazar`
+Flujo completo sin menú:
+
+```bash
+python -m aforo descargar
+python -m aforo procesar --video datos/videos/autopista_1.mp4 --camara autopista_1 --reemplazar
+python -m aforo dashboard
+```
+
+Opciones de `procesar` (sobrescriben `config.py` solo en esa ejecución): `--video`, `--salida`, `--modelo`,
+`--imgsz`, `--sin-video`, `--dispositivo`, `--mostrar` (ventana en vivo), `--camara NOMBRE`, `--reemplazar`
 (borra de la BD los datos previos de esa cámara para repetir una prueba sin duplicar filas).
 
-Resultados: `output/salida.mp4` (video anotado) y las tablas de `db/database.db`. Los pesos de
-YOLO se descargan solos en `models/` la primera vez.
+## Estructura del proyecto
 
-## Calibrar para tu video → `config.py` (PARTE 1)
+```
+.
+├── src/aforo/                  Paquete Python con toda la lógica del sistema
+│   ├── config.py               Configuración centralizada (rutas, líneas, metros, umbrales)  ← lo que editas
+│   ├── cli.py · pipeline.py    Línea de comandos de `procesar` y orquestación del flujo
+│   ├── menu.py · __main__.py   Menú interactivo y comando único `python -m aforo`
+│   ├── vision/                 detector (YOLOv8) · tracker (ByteTrack) · movimiento · visualizer
+│   ├── analitica/              geometry · line_counter · speed_estimator · alertas (reglas de negocio)
+│   ├── persistencia/db.py      SQLite: tablas, INSERT/UPDATE
+│   ├── evaluacion/             evaluar · anotar_verdad_terreno · verificar_tracking
+│   └── herramientas/           descargar_videos · seleccionar_puntos · capturar_fallas · generar_evidencia_fallas
+├── dashboard/                  Dashboard web, autocontenido
+│   ├── backend/                API FastAPI: consultas.py (SQL) · panel.py (arma el JSON) · app.py
+│   └── frontend/               index.html · css/ (tokens, base, layout, componentes, gráficos) · js/ (módulos y gráficos SVG)
+├── datos/                      Datos de ejecución (no se versionan, salvo la verdad de terreno)
+│   ├── videos/  modelos/  db/  salidas/        videos, pesos YOLO, base de datos, video anotado
+│   └── evaluacion/             verdad de terreno anotada a mano (JSON, sí se versiona)
+├── tests/                      Pruebas unitarias
+├── docs/                       Informe y documentación
+├── requirements.txt · pyproject.toml
+└── README.md
+```
+
+## Calibrar para tu video → `src/aforo/config.py` (PARTE 1)
 
 | Qué | Constante |
 |---|---|
@@ -67,15 +87,14 @@ YOLO se descargan solos en `models/` la primera vez.
 | Límite de velocidad que dispara la alerta | `LIMITE_VELOCIDAD_KMH` |
 | Umbrales de "tráfico detenido" y del análisis de movimiento | `DETENIDO_*`, `MOV_*` |
 
-**Coordenadas:** `python seleccionar_puntos.py --video videos/autopista_1.mp4` → haz clic sobre el
-frame (2 puntos por línea: conteo, A, B) y pega lo que imprime. Deben corresponder a la
-**resolución real** del video (`autopista_1` mide 3840x2160; `autopista_2` y `carretera_3`,
-1920x1080). Coloca la línea de conteo **dentro** del tramo A–B (o a su salida).
+Más fácil: el **menú** (`python -m aforo` → Configuración / Videos → Calibrar) edita estos valores con
+validación. Las coordenadas deben corresponder a la **resolución real** del video (`autopista_1` mide
+3840x2160; `autopista_2` y `carretera_3`, 1920x1080). Coloca la línea de conteo **dentro** del tramo A–B.
 
 ## Base de datos
 
-`db.py` crea `db/database.db` y las tablas al iniciar (si no existen). Un `INSERT` en `cruces`
-ocurre en el instante en que el vehículo cruza la línea de conteo:
+`aforo.persistencia.db` crea `datos/db/database.db` y las tablas al iniciar. Un `INSERT` en `cruces` ocurre
+en el instante en que el vehículo cruza la línea de conteo:
 
 | Campo de `cruces` | Tipo | Contenido |
 |---|---|---|
@@ -84,31 +103,40 @@ ocurre en el instante en que el vehículo cruza la línea de conteo:
 | `tipo` | TEXT | Auto / Moto / Bus / Camion |
 | `momento` | TIMESTAMP | hora real del cruce = `FECHA_INICIO_VIDEO` + segundos del video |
 | `velocidad_kmh` | REAL | velocidad medida en la ROI (`NULL` si no se completó) |
-| `camara` | TEXT | nombre de la cámara / fuente (`CAMARA` o `--camara`) |
+| `camara` | TEXT | nombre de la cámara / fuente |
 
-Otras tablas: `alertas`, `lecturas_trafico`, `ejecuciones`, `metricas` y la vista
-`v_aforo_por_minuto`. Modelo ER, DDL y diccionario: [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md).
+Otras tablas: `alertas`, `lecturas_trafico`, `ejecuciones`, `metricas` y la vista `v_aforo_por_minuto`.
+Modelo ER, DDL y diccionario: [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md).
 
-Consulta rápida desde la terminal:
-`python -c "import sqlite3; print(sqlite3.connect('db/database.db').execute('SELECT tipo, COUNT(*), AVG(velocidad_kmh) FROM cruces GROUP BY tipo').fetchall())"`.
+## Dashboard
+
+`python -m aforo dashboard` levanta un servidor local (FastAPI + Uvicorn) que sirve la interfaz y la API
+`/api/panel`. El backend solo **lee** la base (`PRAGMA query_only`) y calcula las agregaciones con SQL
+(`GROUP BY`); el frontend dibuja todo (franjas de KPI, gráficos SVG propios, tablas, estado de la vía).
+Con el interruptor "Auto 5 s" se actualiza mientras `procesar` sigue escribiendo.
 
 ## Evaluación (métricas)
 
 ```bash
-python anotar_verdad_terreno.py --video videos/mi_video.mp4 --camara mi_camara    # 1. marcar cruces a mano
-python main.py --video videos/mi_video.mp4 --camara mi_camara --reemplazar         # 2. correr el sistema
-python evaluar.py --camara mi_camara --informe                                     # 3. precisión, recall, F1, MAE...
+python -m aforo anotar --video datos/videos/mi_video.mp4 --camara mi_camara      # marcar cruces a mano
+python -m aforo procesar --video datos/videos/mi_video.mp4 --camara mi_camara --reemplazar
+python -m aforo evaluar --camara mi_camara --informe                              # precisión, recall, F1, MAE...
 ```
 
-Detalle y definiciones en [`docs/METRICAS.md`](docs/METRICAS.md). La verdad de terreno se guarda
-en `evaluacion/<camara>.json`. Para auditar solo el tracking (sin verdad de terreno):
-`python verificar_tracking.py --video videos/carretera_3.mp4 --max-frames 300`.
+Detalle en [`docs/METRICAS.md`](docs/METRICAS.md). La verdad de terreno queda en `datos/evaluacion/<camara>.json`.
 
 ## Pruebas unitarias
 
 ```bash
 python -m unittest discover -s tests -v
 ```
+
+## Velocidad de procesamiento
+
+En CPU, con YOLOv8s a 960 px y un video 4K el sistema procesa ~2.8 cuadros/s (medido), por eso la ventana
+en vivo se ve a tirones; el cuello de botella es la red neuronal. Para ir más rápido:
+`python -m aforo procesar --mostrar --sin-video --imgsz 640 --modelo datos/modelos/yolov8n.pt` (~8 cuadros/s
+en el mismo video 4K), o usa una GPU NVIDIA, o un video de 1080p o menos. El menú ofrece este "modo rápido".
 
 ## Documentación
 
@@ -123,46 +151,11 @@ python -m unittest discover -s tests -v
 | [`docs/CASOS_DE_FALLA.md`](docs/CASOS_DE_FALLA.md) | 5 casos de falla con evidencia |
 | [`docs/GUIA_SUSTENTACION.md`](docs/GUIA_SUSTENTACION.md) | Qué hace cada módulo y preguntas probables |
 
-## Estructura
-
-```
-config.py              Configuración centralizada (rutas, BD, líneas, metros, umbrales)
-main.py                Punto de entrada y argumentos de consola
-pipeline.py            Orquesta detección → tracking → conteo/velocidad/movimiento → BD → video
-db.py                  SQLite: tablas, INSERT/UPDATE
-detector.py            YOLOv8 filtrado a vehículos
-tracker.py             ByteTrack + votación de clase + historial de posiciones
-line_counter.py        Aforo por intersección de segmentos
-speed_estimator.py     Velocidad = distancia / tiempo (frames ÷ FPS)
-movimiento.py          Resta de fondo + umbralización + morfología (movimiento en la ROI)
-alertas.py             Reglas: exceso de velocidad y tráfico detenido (con histéresis)
-visualizer.py          Cajas, etiquetas, estelas, ROI y panel de conteo
-geometry.py            Producto cruz, intersección de segmentos, polígono de la ROI
-menu.py                Menú interactivo: diagnóstico, configuración, videos, procesar, BD, evaluación
-dashboard.py           Panel Streamlit (modo oscuro) con consultas SQL
-evaluar.py             Métricas contra verdad de terreno
-anotar_verdad_terreno.py  Herramienta para marcar cruces a mano
-verificar_tracking.py  Auditoría de unicidad y estabilidad de IDs
-descargar_videos.py    Descarga videos de tráfico de prueba a videos/
-capturar_fallas.py, generar_evidencia_fallas.py   Evidencia visual de casos de falla
-seleccionar_puntos.py  Obtiene coordenadas con el mouse
-tests/                 Pruebas unitarias
-docs/                  Informe y documentación
-```
-
 ## Notas
 
-- El **Sentido A** (flecha "A" en el video) es el de los vehículos que cruzan la línea de derecha
-  a izquierda según la orientación `punto1 → punto2` tal como se ve en pantalla. Los sentidos se
-  cuentan en el panel del video pero no se guardan en la BD.
-- La velocidad es **media** en el tramo A–B, no instantánea; depende directamente de la distancia
-  medida (ver caso 5 en [`docs/CASOS_DE_FALLA.md`](docs/CASOS_DE_FALLA.md)).
-- Los videos, pesos y la base de datos no se versionan (`.gitignore`); se regeneran con los
-  comandos de arriba.
-
-## Velocidad de procesamiento
-
-En CPU, con YOLOv8s a 960 px y un video 4K el sistema procesa ~2.8 cuadros/s (medido), por eso la ventana
-en vivo se ve a tirones; el cuello de botella es la red neuronal. Para ir más rápido:
-`python main.py --mostrar --sin-video --imgsz 640 --modelo models/yolov8n.pt` (~8 cuadros/s medidos en el mismo
-video 4K), o usa una GPU NVIDIA, o un video de 1080p o menos. El menú ofrece este "modo rápido".
+- El **Sentido A** (flecha "A" en el video) es el de los vehículos que cruzan la línea de derecha a izquierda
+  según la orientación `punto1 → punto2` tal como se ve en pantalla. Los sentidos se cuentan en el panel del
+  video pero no se guardan en la BD.
+- La velocidad es **media** en el tramo A–B, no instantánea; depende directamente de la distancia medida
+  (ver caso 5 en [`docs/CASOS_DE_FALLA.md`](docs/CASOS_DE_FALLA.md)).
+- Los videos, pesos y la base de datos no se versionan (`.gitignore`); se regeneran con los comandos de arriba.

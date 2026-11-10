@@ -1,9 +1,9 @@
 # Modelo de datos
 
-Almacenamiento final: **SQLite 3** (`db/database.db`, módulo estándar `sqlite3`), en modo
+Almacenamiento final: **SQLite 3** (`datos/db/database.db`, módulo estándar `sqlite3`), en modo
 WAL para que el dashboard pueda leer mientras `main.py` escribe. No se usan CSV como
 almacenamiento: los datos de entrada del sistema son video y todo lo que produce se
-guarda en las tablas de abajo. Código: [`db.py`](../db.py).
+guarda en las tablas de abajo. Código: [`db.py`](../src/aforo/persistencia/db.py).
 
 ## Diagrama entidad-relación
 
@@ -73,7 +73,7 @@ Además existe la **vista** `v_aforo_por_minuto` (conteos por minuto y tipo, der
 | **Detecciones** | `cruces` | Cada fila es un vehículo detectado por YOLO, seguido por ByteTrack y confirmado al cruzar la línea de conteo (`track_id` = ID del tracker). |
 | **Conteos** | `v_aforo_por_minuto` (vista) y `cruces` | Se derivan con `GROUP BY`; así no se duplica información (normalización). |
 | **Lecturas** | `lecturas_trafico` y `velocidad_kmh` de `cruces` | Cada 5 s (`INTERVALO_LECTURA_S`): vehículos en la ROI, % de movimiento y estado de la vía. |
-| **Alertas** | `alertas` | `EXCESO_VELOCIDAD` y `TRAFICO_DETENIDO` (reglas en [`alertas.py`](../alertas.py)). |
+| **Alertas** | `alertas` | `EXCESO_VELOCIDAD` y `TRAFICO_DETENIDO` (reglas en [`alertas.py`](../src/aforo/analitica/alertas.py)). |
 | Trazabilidad / calidad | `ejecuciones`, `metricas` | Qué video produjo cada dato y los resultados de `evaluar.py`. |
 
 **Por qué no se guarda cada caja por frame:** en tráfico denso hay ~40 detecciones por frame
@@ -150,7 +150,7 @@ número de vehículos detenidos; `umbral` es el límite que se superó (`LIMITE_
 `DETENIDO_MIN_VEHICULOS`); `track_id` es `NULL` en las alertas de la vía.
 
 **`lecturas_trafico`**: promedio de lo ocurrido en cada intervalo de `INTERVALO_LECTURA_S` s;
-`estado` es el de la máquina de estados de [`alertas.py`](../alertas.py) al cerrar el intervalo.
+`estado` es el de la máquina de estados de [`alertas.py`](../src/aforo/analitica/alertas.py) al cerrar el intervalo.
 
 **`ejecuciones`**: una fila por corrida de `main.py`; permite a `evaluar.py` convertir `momento` en
 "segundos desde el inicio del video" para compararlo con la verdad de terreno.

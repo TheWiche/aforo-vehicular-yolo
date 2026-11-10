@@ -5,10 +5,10 @@ función), más una cuarta de apoyo:
 
 | # | Técnica | Dónde | Para qué |
 |---|---|---|---|
-| 1 | **YOLO (red neuronal convolucional)** | [`detector.py`](../detector.py) | Detectar vehículos y su clase en cada frame. |
-| 2 | **Operaciones aritméticas entre imágenes** | [`movimiento.py`](../movimiento.py) | Modelar el fondo y medir qué cambió. |
-| 3 | **Umbralización + morfología matemática** | [`movimiento.py`](../movimiento.py) | Convertir "qué cambió" en una máscara limpia de movimiento. |
-| 4 | Aritmética de tiempo/espacio (apoyo) | [`speed_estimator.py`](../speed_estimator.py), [`geometry.py`](../geometry.py) | Velocidad = distancia ÷ tiempo; cruce de línea con producto cruz. |
+| 1 | **YOLO (red neuronal convolucional)** | [`detector.py`](../src/aforo/vision/detector.py) | Detectar vehículos y su clase en cada frame. |
+| 2 | **Operaciones aritméticas entre imágenes** | [`movimiento.py`](../src/aforo/vision/movimiento.py) | Modelar el fondo y medir qué cambió. |
+| 3 | **Umbralización + morfología matemática** | [`movimiento.py`](../src/aforo/vision/movimiento.py) | Convertir "qué cambió" en una máscara limpia de movimiento. |
+| 4 | Aritmética de tiempo/espacio (apoyo) | [`speed_estimator.py`](../src/aforo/analitica/speed_estimator.py), [`geometry.py`](../src/aforo/analitica/geometry.py) | Velocidad = distancia ÷ tiempo; cruce de línea con producto cruz. |
 
 ## 1. YOLO / CNN — detección
 

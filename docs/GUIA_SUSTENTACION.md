@@ -11,7 +11,7 @@ video ─► detector.py ─► tracker.py ─► line_counter.py ──► db.p
           (YOLO)        (ByteTrack)    speed_estimator.py ┘      │
                                        movimiento.py ─► alertas.py ─► db.py (alertas, lecturas)
                                        visualizer.py ─► video anotado          │
-                                                              dashboard.py ◄── SELECT
+                                                              dashboard/ ◄── SELECT
 ```
 
 ## `config.py` — configuración centralizada
@@ -88,7 +88,7 @@ video ─► detector.py ─► tracker.py ─► line_counter.py ──► db.p
 - **P:** ¿Por qué histéresis? **R:** sin ella, un parpadeo de un frame generaría cientos de alertas.
 
 ## `db.py` — SQLite
-- **Qué:** crea `db/database.db` y las tablas al abrir; `INSERT` apenas el vehículo cruza;
+- **Qué:** crea `datos/db/database.db` y las tablas al abrir; `INSERT` apenas el vehículo cruza;
   `UPDATE` si la velocidad llega después; consultas siempre parametrizadas.
 - **P:** ¿Por qué SQLite y no CSV? **R:** integridad (tipos, PK, transacciones ACID), SQL para
   consultar y agregar, lectura concurrente (WAL) mientras se escribe, sin servidor. Un CSV no
@@ -105,9 +105,14 @@ video ─► detector.py ─► tracker.py ─► line_counter.py ──► db.p
 - Cajas, ID, clase, velocidad (con "EXCESO" sobre el límite), estelas, ROI, panel de conteo.
   Todo escala con la resolución (`k = alto/1080`).
 
-## `dashboard.py` — Streamlit
-- Cada bloque ejecuta un `SELECT` (agregaciones con `GROUP BY` en SQL, no en Python), conexión
-  `PRAGMA query_only`. Resumen ejecutivo, alertas, estado de la vía, gráficos.
+## `dashboard/` — API FastAPI + interfaz propia
+- **Backend** (`dashboard/backend/`): `consultas.py` ejecuta un `SELECT` por bloque (las agregaciones con
+  `GROUP BY` las hace SQL, no Python), `panel.py` arma el JSON y `app.py` lo sirve en `/api/panel`. La
+  conexión es `PRAGMA query_only`, así que el dashboard nunca puede modificar los datos.
+- **Frontend** (`dashboard/frontend/`): HTML + CSS en capas (tokens, base, layout, componentes, gráficos) y
+  JavaScript en módulos; los gráficos son SVG dibujados a mano (sin librería de gráficos).
+- **P:** ¿Por qué una API y no leer la BD desde el navegador? **R:** el navegador no puede abrir SQLite; la API
+  es la única capa que conoce el esquema y valida los parámetros (percentil, cámaras).
 
 ## `evaluar.py` — métricas
 - **Precisión** = TP/(TP+FP); **recall** = TP/(TP+FN); **F1** = media armónica; **MAE** =
@@ -126,6 +131,6 @@ video ─► detector.py ─► tracker.py ─► line_counter.py ──► db.p
 4. **¿Qué mejorarían?** Homografía para velocidad instantánea, re-identificación para tráfico
    denso, modelo ajustado a sus datos, cámara en vivo (RTSP).
 5. **¿Qué parte es de ustedes y cuál de librerías?** Las librerías (Ultralytics, `trackers`,
-   `supervision`, OpenCV, Streamlit) aportan detección, seguimiento y utilidades; el conteo
+   `supervision`, OpenCV, FastAPI) aportan detección, seguimiento y utilidades; el conteo
    por intersección, la velocidad, el análisis de movimiento, las alertas, la base de datos, el
    dashboard y la evaluación son código del proyecto.

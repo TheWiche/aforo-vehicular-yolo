@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Aforo vial</title>
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Crect width='30' height='30' fill='%23171719'/%3E%3Cpath d='M4 8h22' stroke='%234a8ad6' stroke-width='2.4'/%3E%3Cpath d='M4 22h22' stroke='%238a8c92' stroke-width='2.4'/%3E%3Crect x='11' y='12' width='8' height='6' rx='2' fill='%23f2f2f3'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+  <a class="saltar" href="#contenido">Saltar al contenido</a>
+
+  <header class="barra" id="barra">
+    <div class="barra-izq">
+      <div class="marca" aria-label="Aforo vial">
+        <svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true">
+          <path d="M4 8h22" stroke="var(--acento)" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M4 22h22" stroke="var(--tinta-suave)" stroke-width="2.4" stroke-linecap="round"/>
+          <rect x="11" y="12" width="8" height="6" rx="2" fill="var(--serie)"/>
+        </svg>
+        <span class="marca-nombre">Aforo vial</span>
+      </div>
+      <nav class="camaras" id="camaras" aria-label="Camaras"></nav>
+    </div>
+    <div class="barra-der">
+      <span class="actualizado" id="actualizado" aria-live="polite"></span>
+      <label class="interruptor">
+        <input type="checkbox" id="auto" role="switch">
+        <span class="interruptor-pista" aria-hidden="true"><span class="interruptor-pulgar"></span></span>
+        <span>Auto 5 s</span>
+      </label>
+    </div>
+  </header>
+
+  <main class="lienzo" id="contenido">
+    <section class="encabezado" aria-labelledby="titulo">
+      <h1 id="titulo">Aforo vehicular</h1>
+      <p class="hallazgo" id="hallazgo"></p>
+    </section>
+
+    <div id="franjas"></div>
+
+    <div class="fila f-4-8">
+      <section class="panel" id="panel-barras" aria-labelledby="t-barras"></section>
+      <section class="panel" id="panel-picos" aria-labelledby="t-picos"></section>
+    </div>
+
+    <div class="fila f-6-6">
+      <section class="panel" id="panel-via" aria-labelledby="t-via"></section>
+      <div class="columna">
+        <section class="panel" id="panel-alertas" aria-labelledby="t-alertas"></section>
+        <section class="panel" id="panel-rapidos" aria-labelledby="t-rapidos"></section>
+      </div>
+    </div>
+
+    <section class="panel" id="panel-cruces" aria-labelledby="t-cruces"></section>
+  </main>
+
+  <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

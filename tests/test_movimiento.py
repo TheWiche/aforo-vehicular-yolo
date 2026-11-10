@@ -14,11 +14,11 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import _setup  # noqa: F401  (agrega src/ y la raiz al sys.path)
 
-from alertas import EstadoTrafico, MonitorTrafico, supera_limite  # noqa: E402
-from config import AlertasConfig, MovimientoConfig, cargar_configuracion  # noqa: E402
-from movimiento import DetectorMovimiento  # noqa: E402
+from aforo.analitica.alertas import EstadoTrafico, MonitorTrafico, supera_limite  # noqa: E402
+from aforo.config import AlertasConfig, MovimientoConfig, cargar_configuracion  # noqa: E402
+from aforo.vision.movimiento import DetectorMovimiento  # noqa: E402
 
 ROI = np.array([[0, 0], [199, 0], [199, 199], [0, 199]], dtype=np.int32)
 CFG = MovimientoConfig(escala=1.0, alfa_fondo=0.1, umbral_diferencia=25, kernel_apertura=3, kernel_cierre=7)

@@ -31,7 +31,7 @@ produce, sin intervención humana:
 | ¿A qué velocidad circulan? | Velocidad media en un tramo de longitud conocida por vehículo. |
 | ¿Cuántos y quiénes exceden el límite? | Alerta `EXCESO_VELOCIDAD` por vehículo, con hora y valor. |
 | ¿Hay tráfico detenido ahora? | Alerta `TRAFICO_DETENIDO` y estado de la vía (libre / fluido / detenido). |
-| ¿Dónde veo todo esto? | Dashboard web con resumen ejecutivo, alertas y gráficos (`streamlit run dashboard.py`). |
+| ¿Dónde veo todo esto? | Dashboard web con resumen ejecutivo, alertas y gráficos (`python -m aforo dashboard`). |
 
 Entrada: video (archivo o grabación de la cámara). Salida: base de datos relacional + dashboard.
 

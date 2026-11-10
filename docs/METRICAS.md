@@ -2,7 +2,7 @@
 
 Este documento describe **qué se mide, cómo y con qué datos**. Los números finales se generan
 con `evaluar.py` y quedan en la tabla `metricas` de la base de datos y en
-[`METRICAS_RESULTADOS.md`](METRICAS_RESULTADOS.md) (se regenera con `python evaluar.py --informe`).
+[`METRICAS_RESULTADOS.md`](METRICAS_RESULTADOS.md) (se regenera con `python -m aforo evaluar --informe`).
 
 > **Estado:** las métricas finales requieren (a) los videos propios del equipo y (b) su verdad de
 > terreno anotada a mano. Mientras tanto, lo medido sobre videos públicos es **provisional** y
@@ -20,10 +20,10 @@ las métricas).
 
 1. **Verdad de terreno (GT).** Una persona, sin mirar la salida del sistema, marca con
    `anotar_verdad_terreno.py` el instante y tipo de cada vehículo que cruza la línea de conteo
-   (`evaluacion/<camara>.json`). Si hay velocidades de referencia (GPS, cronómetro), se agregan.
-2. **Sistema.** `python main.py --video <video> --camara <camara> --reemplazar` guarda los cruces
+   (`datos/evaluacion/<camara>.json`). Si hay velocidades de referencia (GPS, cronómetro), se agregan.
+2. **Sistema.** `python -m aforo procesar --video <video> --camara <camara> --reemplazar` guarda los cruces
    en la BD.
-3. **Evaluación.** `python evaluar.py --camara <camara>` lee con `SELECT` los cruces y la GT,
+3. **Evaluación.** `python -m aforo evaluar --camara <camara>` lee con `SELECT` los cruces y la GT,
    empareja eventos (1 a 1, ventana ±1 s, el más cercano primero) y calcula:
 
 | Métrica | Definición | Qué responde |
@@ -56,7 +56,7 @@ Si el equipo etiqueta ~100 frames de sus videos en formato YOLO (por ejemplo con
 el mAP de YOLO sobre ellos se obtiene con:
 
 ```bash
-yolo val model=models/yolov8s.pt data=mi_dataset.yaml imgsz=960 classes=2,3,5,7
+yolo val model=datos/modelos/yolov8s.pt data=mi_dataset.yaml imgsz=960 classes=2,3,5,7
 ```
 
 Mide la calidad del **detector** aislada del tracker y de la línea de conteo; las métricas de
@@ -76,4 +76,4 @@ IDs efímeros, cambios de clase). Resultados sobre los videos públicos:
 
 En tráfico fluido cada vehículo conserva un único ID de entrada a salida; en tráfico denso los
 IDs se fragmentan (ver [`CASOS_DE_FALLA.md`](CASOS_DE_FALLA.md)). Son mediciones reales con
-`python verificar_tracking.py`.
+`python -m aforo auditar`.

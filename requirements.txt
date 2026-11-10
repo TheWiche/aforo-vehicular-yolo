@@ -2,6 +2,7 @@
 # Dependencias exactas del proyecto "Aforo Vehicular y Estimacion de Velocidad"
 # Versiones verificadas con Python 3.12 (Windows 11).
 # Instalacion:  pip install -r requirements.txt
+# (la ultima linea instala tambien el propio paquete `aforo` en modo editable)
 # ---------------------------------------------------------------------------
 
 # Deteccion: YOLOv8 pre-entrenado sobre COCO
@@ -23,7 +24,10 @@ scipy==1.17.1
 # Barra de progreso en consola
 tqdm==4.70.1
 
-# Dashboard web (dashboard.py)
-streamlit==1.67.0
-plotly==7.1.0
-pandas==3.0.2
+# Dashboard web: API (FastAPI) + servidor (Uvicorn). httpx solo lo usan las pruebas de la API.
+fastapi==0.142.4
+uvicorn==0.54.0
+httpx==0.28.1
+
+# El paquete del proyecto (src/aforo), en modo editable
+-e .

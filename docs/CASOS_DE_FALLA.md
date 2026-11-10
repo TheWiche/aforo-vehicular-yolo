@@ -4,7 +4,7 @@ Cinco casos **observados en ejecuciones reales** del sistema (no hipotéticos), 
 evidencia, causa, impacto en el cliente y mitigación. Las imágenes están en
 [`fallas/`](fallas/): las de los casos 1 y 2 son frames de los videos anotados por `main.py`
 (extraídos con `capturar_fallas.py`) y las de los casos 3 y 4 se regeneran con
-`python generar_evidencia_fallas.py`. Los videos son los públicos de `descargar_videos.py`.
+`python -m aforo evidencia`. Los videos son los públicos de `descargar_videos.py`.
 
 | # | Caso | Video | Gravedad para el cliente |
 |---|---|---|---|

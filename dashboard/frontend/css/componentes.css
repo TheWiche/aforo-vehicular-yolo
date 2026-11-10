@@ -1,0 +1,100 @@
+/* ---------- selector de camaras: la seleccion es una linea de 1 px del ancho de la etiqueta ---------- */
+.camaras { display: flex; gap: 18px; overflow-x: auto; }
+.camara { position: relative; padding: 6px 0; color: var(--tinta-suave); font-size: var(--fs-cuerpo); white-space: nowrap;
+  transition: color var(--duracion-rapida) var(--suave); }
+.camara:hover { color: var(--tinta); }
+.camara[aria-pressed="true"] { color: var(--tinta); }
+.camara::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px; background: var(--acento);
+  transform: scaleX(0); transform-origin: left; transition: transform var(--duracion-rapida) var(--suave);
+}
+.camara[aria-pressed="true"]::after { transform: scaleX(1); }
+
+/* ---------- interruptor (auto-actualizar): el pulgar viaja con un pequeno rebote ---------- */
+.interruptor { display: inline-flex; align-items: center; gap: 8px; color: var(--tinta-2); font-size: var(--fs-peq); cursor: pointer; }
+.interruptor input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.interruptor-pista { width: 30px; height: 16px; border-radius: 999px; background: var(--elevado); border: 1px solid var(--control);
+  position: relative; transition: border-color var(--duracion-rapida) var(--suave); }
+.interruptor-pulgar { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--tinta-suave);
+  transition: transform var(--duracion-rapida) cubic-bezier(0.34, 1.36, 0.64, 1), background var(--duracion-rapida) var(--suave); }
+.interruptor input:checked + .interruptor-pista { border-color: var(--acento); }
+.interruptor input:checked + .interruptor-pista .interruptor-pulgar { transform: translateX(14px); background: var(--acento); }
+.interruptor input:focus-visible + .interruptor-pista { outline: 1px solid var(--acento); outline-offset: 3px; }
+
+/* ---------- franjas de KPI: un contenedor dividido por lineas de 1 px, no tarjetas sueltas ---------- */
+.franja { display: grid; background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); overflow: hidden; margin-bottom: 12px; }
+.franja.c5 { grid-template-columns: 1.5fr repeat(4, 1fr); }
+.franja.c4 { grid-template-columns: repeat(4, 1fr); }
+.celda { padding: 16px 20px; border-left: 1px solid var(--regla); min-width: 0; transition: background var(--duracion-rapida) var(--suave); }
+.celda:first-child { border-left: 0; }
+.celda:hover { background: var(--elevado); }
+.celda-etiqueta { display: flex; align-items: center; gap: 8px; color: var(--tinta-suave); font-size: var(--fs-peq); }
+.punto { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.celda-valor { margin: 6px 0 2px; font-size: 22px; line-height: 1.2; font-weight: 400; }
+.celda-valor small { margin-left: 4px; color: var(--tinta-suave); font-size: 13px; }
+.celda.guia .celda-valor { font-size: 34px; font-weight: 500; }       /* la cifra que responde la pregunta */
+.celda-detalle { color: var(--tinta-suave); font-size: var(--fs-peq); }
+@media (max-width: 960px) {
+  .franja.c5, .franja.c4 { grid-template-columns: repeat(2, 1fr); }
+  .celda { border-top: 1px solid var(--regla); }
+  .celda:nth-child(odd) { border-left: 0; }
+  .franja.c5 .celda:first-child { grid-column: 1 / -1; }
+}
+
+/* ---------- paneles ---------- */
+.panel { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: 18px 22px 20px; min-width: 0; }
+.panel-cabecera { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 10px; }
+.panel h2 { font-size: var(--fs-seccion); font-weight: 600; line-height: 1.3; }
+.panel-texto { margin-top: 4px; color: var(--tinta-suave); font-size: var(--fs-cuerpo); line-height: 1.5; }
+
+/* segmentado de percentiles: misma linea de 1 px bajo la opcion elegida */
+.opciones { display: flex; gap: 14px; flex: none; }
+.opcion { position: relative; padding: 2px 0; color: var(--tinta-suave); font-size: var(--fs-peq); transition: color var(--duracion-rapida) var(--suave); }
+.opcion:hover, .opcion[aria-pressed="true"] { color: var(--tinta); }
+.opcion::after { content: ""; position: absolute; left: 0; right: 0; bottom: -3px; height: 1px; background: var(--acento);
+  transform: scaleX(0); transform-origin: left; transition: transform var(--duracion-rapida) var(--suave); }
+.opcion[aria-pressed="true"]::after { transform: scaleX(1); }
+
+/* ---------- tablas: reglas y alineacion, sin cebra ni bandas ---------- */
+.tabla-marco { overflow-x: auto; }
+.tabla th { padding: 0 20px 8px 0; color: var(--tinta-suave); font-size: var(--fs-peq); font-weight: 400; text-align: left; border-bottom: 1px solid var(--borde); white-space: nowrap; }
+.tabla td { height: var(--alto-fila); padding: 0 20px 0 0; border-bottom: 1px solid var(--regla); white-space: nowrap; }
+.tabla tr:last-child td { border-bottom: 0; }
+.tabla tbody tr { transition: background var(--duracion-rapida) var(--suave); }
+.tabla tbody tr:hover { background: var(--elevado); }
+.tabla .num { text-align: right; }
+.tabla th:last-child, .tabla td:last-child { padding-right: 0; }
+.tabla .suave { color: var(--tinta-suave); }
+.tabla .largo { white-space: normal; min-width: 160px; }
+.tipo { display: inline-flex; align-items: center; gap: 8px; }
+.tabla-alertas { max-height: 372px; overflow-y: auto; }
+.tabla-alertas thead th { position: sticky; top: 0; background: var(--superficie); }
+.pildora { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: var(--fs-peq); line-height: 18px; }
+.pildora.exceso { background: #2a2416; color: var(--alerta); }
+.pildora.detenido { background: #2c1a20; color: var(--negativo); }
+details > summary { cursor: pointer; color: var(--tinta-2); font-size: var(--fs-cuerpo); padding: 4px 0 12px; list-style: none; }
+details > summary::before { content: "+ "; color: var(--tinta-suave); }
+details[open] > summary::before { content: "− "; }
+
+/* ---------- tira de estado de la via: lo que solo este producto tiene ---------- */
+.tira { display: flex; gap: 2px; height: 26px; margin: 6px 0 8px; }
+.tira span { flex: 1; min-width: 2px; border-radius: 2px; background: var(--elevado); }
+.tira .fluido { background: var(--fluido); }
+.tira .detenido { background: var(--alerta); }
+.leyenda { display: flex; gap: 16px; color: var(--tinta-suave); font-size: var(--fs-peq); margin-bottom: 14px; }
+.leyenda i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; border-radius: 2px; vertical-align: -1px; }
+
+/* ---------- estados honestos: vacio, error y carga dentro del propio bloque ---------- */
+.estado { border: 1px dashed var(--control); border-radius: var(--radio); padding: 12px 16px; color: var(--tinta-suave); font-size: var(--fs-cuerpo); }
+.estado button { color: var(--tinta); text-decoration: underline; text-underline-offset: 3px; margin-left: 8px; }
+.pantalla-vacia { border: 1px solid var(--borde); border-radius: var(--radio); background: var(--superficie); padding: 28px; max-width: 640px; }
+.pantalla-vacia h2 { font-size: var(--fs-seccion); margin-bottom: 6px; }
+.pantalla-vacia p { color: var(--tinta-suave); }
+.pantalla-vacia code { color: var(--tinta); background: var(--elevado); padding: 1px 6px; border-radius: 3px; }
+
+/* esqueleto de carga: el layout final con barras planas del tamano real, sin brillo animado */
+.esq { background: var(--elevado); border-radius: 3px; display: block; }
+.esq-cel { height: 74px; border-left: 1px solid var(--regla); }
+.esq-grafico { height: 250px; border-radius: var(--radio); }
+.revela { animation: revela var(--duracion-lenta) ease-in-out both; }
+@keyframes revela { from { opacity: 0; filter: blur(2px); } to { opacity: 1; filter: blur(0); } }

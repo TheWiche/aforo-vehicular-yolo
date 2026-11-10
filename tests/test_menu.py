@@ -11,13 +11,13 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import _setup  # noqa: F401  (agrega src/ y la raiz al sys.path)
 
-import menu  # noqa: E402
+from aforo import menu  # noqa: E402
 
 TEXTO = '''"""Doc con acentos: línea."""
 RAIZ = Path("x")
-NOMBRE: str = "videos/a.mp4"      # comentario con ñ y acentos
+NOMBRE: str = "datos/videos/a.mp4"      # comentario con ñ y acentos
 DISTANCIA: float = 20.0   # metros
 LINEA: Tuple[Point, Point] = ((0, 400), (1280, 400))
 CLASES: Dict[int, str] = {
@@ -40,8 +40,8 @@ class EdicionDeConfigTest(unittest.TestCase):
         self.assertEqual(nuevo.replace("35.5", "20.0"), TEXTO)           # nada mas cambio
 
     def test_funciona_con_acentos_antes_en_el_archivo_y_cadenas(self) -> None:
-        nuevo = menu.reemplazar_constante(TEXTO, "NOMBRE", "videos/ñandú.mp4")
-        self.assertIn('NOMBRE: str = "videos/ñandú.mp4"      # comentario con ñ y acentos', nuevo)
+        nuevo = menu.reemplazar_constante(TEXTO, "NOMBRE", "datos/videos/ñandú.mp4")
+        self.assertIn('NOMBRE: str = "datos/videos/ñandú.mp4"      # comentario con ñ y acentos', nuevo)
 
     def test_reemplaza_lineas_y_none(self) -> None:
         nuevo = menu.reemplazar_constante(TEXTO, "LINEA", ((10, 20), (30, 40)))
