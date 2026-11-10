@@ -1,0 +1,14 @@
+# Tema oscuro del dashboard (Streamlit lo lee al ejecutar `streamlit run dashboard.py`
+# desde la carpeta del proyecto).
+[theme]
+base = "dark"
+primaryColor = "#3987e5"
+backgroundColor = "#0d0d0d"
+secondaryBackgroundColor = "#1a1a19"
+textColor = "#f0efec"
+
+[client]
+toolbarMode = "minimal"      # oculta el boton "Deploy"
+
+[browser]
+gatherUsageStats = false

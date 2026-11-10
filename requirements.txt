@@ -1,0 +1,29 @@
+# ---------------------------------------------------------------------------
+# Dependencias exactas del proyecto "Aforo Vehicular y Estimacion de Velocidad"
+# Versiones verificadas con Python 3.12 (Windows 11).
+# Instalacion:  pip install -r requirements.txt
+# ---------------------------------------------------------------------------
+
+# Deteccion: YOLOv8 pre-entrenado sobre COCO
+ultralytics==8.4.183
+torch==2.14.1
+torchvision==0.29.1
+
+# Tracking: ByteTrack (implementacion oficial de Roboflow, compatible con supervision)
+trackers==2.7.0
+
+# Visualizacion y utilidades de video (Detections, anotadores, VideoSink)
+supervision==0.31.5
+
+# Procesamiento numerico e imagen
+numpy==2.4.4
+opencv-python==5.0.0.93
+scipy==1.17.1
+
+# Barra de progreso en consola
+tqdm==4.70.1
+
+# Dashboard web (dashboard.py)
+streamlit==1.67.0
+plotly==7.1.0
+pandas==3.0.2

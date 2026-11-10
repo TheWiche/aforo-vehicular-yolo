@@ -1,0 +1,18 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.vscode/
+
+# Datos pesados (se generan o los aporta el usuario)
+videos/*
+output/*
+models/*
+db/*
+*.pt
+
+# Mantener las carpetas vacias en el repositorio
+!videos/.gitkeep
+!output/.gitkeep
+!models/.gitkeep
+!db/.gitkeep
