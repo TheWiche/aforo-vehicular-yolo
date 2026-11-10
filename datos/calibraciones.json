@@ -5,7 +5,8 @@
     "LINEA_CONTEO": [[900, 1350], [3150, 1350]],
     "LINEA_VELOCIDAD_A": [[990, 990], [3000, 990]],
     "LINEA_VELOCIDAD_B": [[600, 1680], [3570, 1680]],
-    "DISTANCIA_REAL_METROS": 50.0
+    "DISTANCIA_REAL_METROS": 50.0,
+    "LIMITE_VELOCIDAD_KMH": 60.0
   },
   "Prueba1_optimizado.mp4": {
     "nota": "Calle lateral con tronco grande al centro: se mide solo a la izquierda del tronco. Escala de 11,5 m (muro izquierdo a arbol pequeno) = ~148 px/m; error estimado +-15 % por perspectiva.",

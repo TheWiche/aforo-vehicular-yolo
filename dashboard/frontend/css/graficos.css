@@ -1,27 +1,38 @@
-/* Graficos SVG propios. Sin leyenda en series unicas, 4-5 lineas de cuadricula tenues,
-   sin linea de eje Y, texto de ejes en gris legible y cifras tabulares. */
-.grafico { width: 100%; }
-.grafico svg { display: block; width: 100%; height: auto; overflow: visible; }
-.grafico text { font-family: var(--fuente); font-size: 12px; fill: var(--tinta-suave); font-variant-numeric: tabular-nums; }
-.g-rejilla { stroke: var(--rejilla); stroke-width: 1; }
-.g-base { stroke: var(--control); stroke-width: 1; }
-.g-ref { stroke: var(--tinta-suave); stroke-width: 1; stroke-dasharray: 3 4; }
-.g-etiqueta-ref { fill: var(--tinta-2) !important; stroke: var(--superficie); stroke-width: 4px; paint-order: stroke; }
-.g-valor { fill: var(--tinta) !important; font-size: 13px !important; }
-.g-linea { fill: none; stroke: var(--serie); stroke-width: 2; stroke-linejoin: round; }
-.g-punto { fill: var(--tinta-suave); stroke: var(--superficie); stroke-width: 2; transition: r var(--duracion-rapida) var(--suave); }
-.g-pico { fill: var(--alerta); stroke: var(--superficie); stroke-width: 2; }
-.g-barra { transition: opacity var(--duracion-rapida) var(--suave); }
-.g-barra:hover { opacity: .85; }
-.g-anota { fill: var(--tinta) !important; font-size: 13px !important; stroke: var(--superficie); stroke-width: 4px; paint-order: stroke; }
-.g-guia { stroke: var(--tinta-suave); stroke-width: 1; }
-.g-sup { fill: none; stroke: transparent; stroke-width: 1; pointer-events: all; }
-.g-leyenda-pico { fill: var(--alerta); }
+/* Graficos SVG propios: pocas lineas de guia, sin eje vertical, un tono por grafico */
+.grafico { position: relative; width: 100%; min-width: 0; }
+.grafico.crece { flex: 1; min-height: 216px; }
+.grafico svg { display: block; position: absolute; inset: 0; overflow: visible; }
+.grafico text { font-family: var(--font); font-size: 12px; fill: var(--muted); font-variant-numeric: tabular-nums; }
 
-/* tooltip: texto desnudo en una caja simple; aparece con retardo y se cierra al instante */
-.tooltip { position: fixed; z-index: 20; pointer-events: none; background: var(--superficie); border: 1px solid var(--control);
-  border-radius: var(--radio); padding: 7px 10px; font-size: 13px; line-height: 1.4; white-space: nowrap;
-  opacity: 0; transform: scale(0.98); transition: none; }
-.tooltip.visible { opacity: 1; transform: scale(1); transition: opacity 150ms ease-out 80ms, transform 150ms ease-out 80ms; }
-.tooltip b { font-weight: 500; }
-.tooltip .suave { color: var(--tinta-suave); }
+.g-guia { stroke: var(--grid); stroke-width: 1; shape-rendering: crispEdges; }
+.g-base { stroke: var(--control); stroke-width: 1; shape-rendering: crispEdges; }
+.g-ref { stroke: var(--text); stroke-width: 1; stroke-dasharray: 4 3; shape-rendering: crispEdges; }
+.g-ref-solida { stroke: var(--text); stroke-width: 1; shape-rendering: crispEdges; }
+.grafico text.g-ref-texto { fill: var(--text); font-weight: 500; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; stroke-linejoin: round; }
+
+/* Dispersion: cada vehiculo es un punto con un aro del color de la superficie */
+.g-punto { stroke: var(--surface); stroke-width: 1.5; transition: r var(--duration-quick) var(--ease-out), opacity var(--duration-fast) var(--ease-out); }
+.g-punto.normal { fill: var(--chart-1); }
+.g-punto.exceso { fill: var(--negative); }
+.g-punto.apagado { fill: var(--via-fluido); opacity: 0.28; }
+.g-aro { fill: none; stroke: var(--text); stroke-width: 1.5; pointer-events: none; }
+.g-zona { fill: transparent; cursor: crosshair; }
+.g-zona.sobre-punto { cursor: pointer; }
+
+/* Columnas e histograma */
+.g-barra { transition: opacity var(--duration-quick) var(--ease-out); }
+.g-barra.normal { fill: var(--chart-1); }
+.g-barra.exceso { fill: var(--negative); }
+.g-columna:hover .g-barra { opacity: 0.78; }
+.g-columna .g-toque { fill: transparent; }
+.g-columna:hover .g-toque { fill: rgba(19, 20, 22, 0.04); }
+
+/* Tira de estado de la via, alineada con el eje de tiempo del aforo */
+.via-LIBRE { fill: var(--via-libre); }
+.via-FLUIDO { fill: var(--via-fluido); }
+.via-DETENIDO { fill: var(--negative); }
+.tira.via-LIBRE { background: var(--via-libre); }
+.tira.via-FLUIDO { background: var(--via-fluido); }
+.tira.via-DETENIDO { background: var(--negative); }
+
+.grafico-vacio { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 16px; color: var(--muted); border: 1px dashed var(--control); border-radius: var(--radius-control); }

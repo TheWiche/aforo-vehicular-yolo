@@ -1,5 +1,7 @@
-@import url("tokens.css");
-@import url("base.css");
-@import url("layout.css");
-@import url("componentes.css");
-@import url("graficos.css");
+/* Orden: variables -> base -> marco (barra lateral, barra superior, hoja) -> piezas -> graficos -> movimiento */
+@import "tokens.css";
+@import "base.css";
+@import "marco.css";
+@import "componentes.css";
+@import "graficos.css";
+@import "movimiento.css";

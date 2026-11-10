@@ -57,7 +57,7 @@ cambios de clase de un mismo vehículo, máscara de movimiento inflada por sombr
 distancia incorrecta. Detalle: [`CASOS_DE_FALLA.md`](CASOS_DE_FALLA.md).
 
 ## 8. Reproducibilidad
-Repositorio ordenado, `requirements.txt` con versiones exactas, pruebas unitarias (92) y flujo
+Repositorio ordenado, `requirements.txt` con versiones exactas, pruebas unitarias (109) y flujo
 completo en el [`README`](../README.md): `pip install -r requirements.txt` →
 `python -m aforo descargar` → `python -m aforo procesar ...` → `python -m aforo dashboard` →
 `python -m aforo evaluar ...`.

@@ -4,63 +4,234 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Aforo vial</title>
-  <meta name="color-scheme" content="dark">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Crect width='30' height='30' fill='%23171719'/%3E%3Cpath d='M4 8h22' stroke='%234a8ad6' stroke-width='2.4'/%3E%3Cpath d='M4 22h22' stroke='%238a8c92' stroke-width='2.4'/%3E%3Crect x='11' y='12' width='8' height='6' rx='2' fill='%23f2f2f3'/%3E%3C/svg%3E">
+  <meta name="color-scheme" content="light">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23f5f7f9'/%3E%3Cpath d='M12 3v4M12 10v4M12 17v4' stroke='%23131416' stroke-width='2.4' stroke-linecap='round'/%3E%3Cpath d='M4 12h16' stroke='%231d5fa8' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
   <a class="saltar" href="#contenido">Saltar al contenido</a>
 
-  <header class="barra" id="barra">
-    <div class="barra-izq">
-      <div class="marca" aria-label="Aforo vial">
-        <svg width="28" height="28" viewBox="0 0 30 30" aria-hidden="true">
-          <path d="M4 8h22" stroke="var(--acento)" stroke-width="2.4" stroke-linecap="round"/>
-          <path d="M4 22h22" stroke="var(--tinta-suave)" stroke-width="2.4" stroke-linecap="round"/>
-          <rect x="11" y="12" width="8" height="6" rx="2" fill="var(--serie)"/>
-        </svg>
-        <span class="marca-nombre">Aforo vial</span>
+  <div class="marco">
+    <!-- Marco en L: barra lateral y barra superior comparten el mismo fondo -->
+    <aside class="lateral" id="lateral" aria-label="Navegación">
+      <div class="lateral-cabeza">
+        <a class="marca" href="#/resumen">
+          <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 2.5v4.5M12 9.75v4.5M12 17v4.5" stroke="var(--text)" stroke-width="2.2" stroke-linecap="round"/>
+            <path d="M3.5 12h17" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+          <span>Aforo vial</span>
+        </a>
+        <button class="icono-boton solo-movil" id="menu-cerrar" type="button" aria-label="Cerrar el menú">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9M12.5 3.5l-9 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
       </div>
-      <nav class="camaras" id="camaras" aria-label="Camaras"></nav>
-    </div>
-    <div class="barra-der">
-      <span class="actualizado" id="actualizado" aria-live="polite"></span>
-      <label class="interruptor">
-        <input type="checkbox" id="auto" role="switch">
-        <span class="interruptor-pista" aria-hidden="true"><span class="interruptor-pulgar"></span></span>
-        <span>Auto 5 s</span>
-      </label>
-    </div>
-  </header>
 
-  <main class="lienzo" id="contenido">
-    <section class="encabezado" aria-labelledby="titulo">
-      <h1 id="titulo">Aforo vehicular</h1>
-      <p class="hallazgo" id="hallazgo"></p>
-    </section>
+      <nav class="nav" aria-label="Secciones">
+        <a class="nav-item" href="#/resumen" data-vista="resumen">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13.5h11M4.5 11V7.5M8 11V3.5M11.5 11V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Resumen
+        </a>
+        <a class="nav-item" href="#/vehiculos" data-vista="vehiculos">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4h11M2.5 8h11M2.5 12h7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Vehículos
+        </a>
+      </nav>
 
-    <div id="franjas"></div>
-
-    <div class="fila f-4-8">
-      <section class="panel" id="panel-barras" aria-labelledby="t-barras"></section>
-      <section class="panel" id="panel-picos" aria-labelledby="t-picos"></section>
-    </div>
-
-    <div class="fila f-6-6">
-      <section class="panel" id="panel-via" aria-labelledby="t-via"></section>
-      <div class="columna">
-        <section class="panel" id="panel-alertas" aria-labelledby="t-alertas"></section>
-        <section class="panel" id="panel-rapidos" aria-labelledby="t-rapidos"></section>
+      <div class="grupo">
+        <p class="grupo-titulo" id="t-camaras">Cámaras</p>
+        <div class="camaras" id="camaras" role="radiogroup" aria-labelledby="t-camaras"></div>
       </div>
-    </div>
 
-    <section class="panel" id="panel-cruces" aria-labelledby="t-cruces"></section>
-  </main>
+      <div class="lateral-pie">
+        <div class="auto-fila">
+          <span id="t-auto">Actualizar cada 5 s</span>
+          <button class="t-toggle" id="auto" type="button" role="switch" aria-checked="false" aria-labelledby="t-auto" data-on="false">
+            <span class="t-toggle-thumb"></span>
+          </button>
+        </div>
+        <p class="pie-nota">Secretaría de Movilidad</p>
+      </div>
+    </aside>
 
-  <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+    <header class="superior">
+      <button class="icono-boton solo-movil" id="menu-abrir" type="button" aria-label="Abrir el menú" aria-controls="lateral">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+      <p class="ambito" id="ambito"></p>
+      <form class="buscador" id="buscador" role="search" novalidate>
+        <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input id="buscar" type="search" inputmode="numeric" autocomplete="off" placeholder="Buscar un vehículo por su ID" aria-label="Buscar un vehículo por su ID">
+        <kbd class="atajo" aria-hidden="true">/</kbd>
+      </form>
+      <div class="superior-der">
+        <span class="sello" id="actualizado" aria-live="polite"></span>
+        <button class="icono-boton" id="refrescar" type="button" aria-label="Actualizar ahora">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M13 8a5 5 0 1 1-1.6-3.7M13 2.5V5h-2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="hoja" id="contenido">
+      <!-- ============================ Resumen ============================ -->
+      <section class="vista" id="vista-resumen" aria-labelledby="h-resumen">
+        <header class="titulo-fila">
+          <div class="senal" id="senal" aria-hidden="true"></div>
+          <div class="titulo-texto">
+            <h1 id="h-resumen">Resumen</h1>
+            <p class="hallazgo" id="hallazgo"><span class="esqueleto" style="width:420px;height:14px"></span></p>
+          </div>
+          <a class="boton primario" id="accion-excesos" href="#/vehiculos?filtro=excesos" hidden>Revisar excesos</a>
+        </header>
+
+        <!-- Rejilla a 1440: 1156 = 748 (principal) + 24 + 384 (riel). KPI: 4 x 187. Par: 2 x 362 + 24. -->
+        <div class="rejilla">
+          <div class="principal">
+            <section class="kpis" id="kpis" aria-label="Indicadores de la cámara">
+              <div class="kpi">
+                <p class="kpi-etq">Vehículos contados</p>
+                <p class="kpi-valor"><span class="num" id="k-total"><span class="esqueleto" style="width:56px;height:28px"></span></span></p>
+                <p class="kpi-nota" id="k-total-nota">&nbsp;</p>
+              </div>
+              <div class="kpi">
+                <p class="kpi-etq">Velocidad media</p>
+                <p class="kpi-valor"><span class="num" id="k-media"><span class="esqueleto" style="width:56px;height:28px"></span></span><span class="unidad" id="k-media-u"></span></p>
+                <p class="kpi-nota" id="k-media-nota">&nbsp;</p>
+              </div>
+              <div class="kpi">
+                <p class="kpi-etq"><abbr title="El 85 % de los vehículos circuló a esta velocidad o menos. Es la velocidad de operación de la vía.">Percentil 85 (V85)</abbr></p>
+                <p class="kpi-valor"><span class="num" id="k-v85"><span class="esqueleto" style="width:56px;height:28px"></span></span><span class="unidad" id="k-v85-u"></span></p>
+                <p class="kpi-nota" id="k-v85-nota">&nbsp;</p>
+              </div>
+              <div class="kpi">
+                <p class="kpi-etq">Sobre el límite</p>
+                <p class="kpi-valor"><span class="num" id="k-exceso"><span class="esqueleto" style="width:56px;height:28px"></span></span><span class="unidad" id="k-exceso-u"></span></p>
+                <p class="kpi-nota" id="k-exceso-nota">&nbsp;</p>
+              </div>
+            </section>
+
+            <section class="tarjeta" aria-labelledby="t-dispersion">
+              <header class="tarjeta-cabeza">
+                <div>
+                  <h2 id="t-dispersion">Velocidad de cada vehículo</h2>
+                  <ul class="leyenda" aria-label="Leyenda">
+                    <li><span class="punto p-normal"></span>Dentro del límite</li>
+                    <li><span class="punto p-exceso"></span>Sobre el límite</li>
+                    <li id="leyenda-limite"><span class="raya"></span><span></span></li>
+                  </ul>
+                </div>
+                <div id="seg-tipos"></div>
+              </header>
+              <div class="grafico" id="g-dispersion" style="height:232px"></div>
+            </section>
+
+            <div class="par">
+              <section class="tarjeta" aria-labelledby="t-aforo">
+                <header class="tarjeta-cabeza">
+                  <h2 id="t-aforo">Aforo por minuto</h2>
+                  <ul class="leyenda" id="leyenda-via" aria-label="Estado de la vía"></ul>
+                </header>
+                <div class="grafico crece" id="g-aforo"></div>
+              </section>
+              <section class="tarjeta" aria-labelledby="t-histo">
+                <header class="tarjeta-cabeza">
+                  <h2 id="t-histo">Distribución de velocidades</h2>
+                  <p class="cabeza-nota">Clases de 5 km/h</p>
+                </header>
+                <div class="grafico crece" id="g-histograma"></div>
+              </section>
+            </div>
+          </div>
+
+          <aside class="riel" aria-label="Evidencia y desglose">
+            <h2 class="riel-titulo" id="t-evidencia">En la cámara</h2>
+            <section class="tarjeta evidencia" id="evidencia" aria-labelledby="t-evidencia"></section>
+
+            <h2 class="riel-titulo" id="t-tipos">Por tipo de vehículo</h2>
+            <section class="tarjeta sin-relleno" aria-labelledby="t-tipos">
+              <table class="tabla compacta" id="tabla-tipos">
+                <thead><tr><th scope="col">Tipo</th><th scope="col" class="num">Vehículos</th><th scope="col" class="num">Parte</th><th scope="col" class="num">Media</th></tr></thead>
+                <tbody></tbody>
+              </table>
+            </section>
+
+            <h2 class="riel-titulo" id="t-excesos">Excesos más altos</h2>
+            <section class="tarjeta sin-relleno lista-marco" aria-labelledby="t-excesos">
+              <ul class="lista" id="lista-excesos"></ul>
+              <a class="boton contorno ancho" id="ver-excesos" href="#/vehiculos?filtro=excesos&orden=velocidad">Ver todos los excesos</a>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============================ Vehículos ============================ -->
+      <section class="vista" id="vista-vehiculos" aria-labelledby="h-vehiculos" hidden>
+        <header class="titulo-fila">
+          <div class="titulo-texto">
+            <h1 id="h-vehiculos">Vehículos</h1>
+            <p class="hallazgo" id="v-resumen">&nbsp;</p>
+          </div>
+        </header>
+
+        <div class="filtros">
+          <div id="seg-filtro"></div>
+          <label class="campo">
+            <span class="solo-lectores">Tipo de vehículo</span>
+            <select id="v-tipo"></select>
+          </label>
+          <button class="ficha" id="v-id" type="button" hidden></button>
+          <label class="campo al-final">
+            <span class="solo-lectores">Orden</span>
+            <select id="v-orden">
+              <option value="hora">Más recientes primero</option>
+              <option value="velocidad">Más rápidos primero</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="rejilla detalle">
+          <section class="tarjeta registro-marco" aria-label="Registro de vehículos">
+            <table class="tabla registro" id="tabla-registro">
+              <thead><tr>
+                <th scope="col">Vehículo</th><th scope="col">Tipo</th><th scope="col">Hora del cruce</th>
+                <th scope="col" class="num">Velocidad</th><th scope="col" class="num">Respecto al límite, km/h</th>
+              </tr></thead>
+              <tbody></tbody>
+            </table>
+            <div class="tabla-pie">
+              <span class="num" id="v-rango"></span>
+              <button class="boton contorno" id="v-mas" type="button" hidden>Cargar más</button>
+            </div>
+          </section>
+
+          <aside class="riel pegado" id="detalle" aria-label="Vehículo seleccionado">
+            <button class="boton contorno" id="detalle-volver" type="button">Volver al registro</button>
+            <section class="tarjeta evidencia" id="evidencia-detalle"></section>
+            <section class="tarjeta pozo" id="ficha-vehiculo"></section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ==================== Sin datos / sin conexión ==================== -->
+      <section class="vista" id="vista-estado" aria-labelledby="h-estado" hidden>
+        <header class="titulo-fila"><div class="titulo-texto">
+          <h1 id="h-estado">Aún no hay datos</h1>
+          <p class="hallazgo" id="estado-mensaje"></p>
+        </div></header>
+        <div class="tarjeta primeros-pasos">
+          <p>Para llenar este panel, procesa un video desde la terminal:</p>
+          <pre><code>python -m aforo            # menú guiado: elegir video, calibrar y procesar
+python -m aforo procesar   # procesar el video activo directamente</code></pre>
+          <button class="boton contorno" id="estado-reintentar" type="button">Volver a comprobar</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="tooltip" id="tooltip" role="tooltip" data-show="false"></div>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

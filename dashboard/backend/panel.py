@@ -11,7 +11,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Callable, Dict, List, Optional, Sequence
 
 from . import consultas
 
@@ -46,26 +46,33 @@ def construir_panel(
     pct: int,
     clases: List[Dict[str, Any]],
     limite_kmh: float,
+    contexto: Optional[Callable[[str, Optional[Dict[str, Any]]], Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     """
     Devuelve el panel completo. `estado` indica si hay algo que mostrar:
     ok | sin_bd (el archivo no existe) | sin_tablas (no es una base de este proyecto) | vacia.
     """
     if not ruta_db.is_file():
-        return _vacio("sin_bd", f"Todavia no existe la base de datos ({ruta_db.name}). "
-                      "Procesa un video con `python -m aforo procesar`.", [], clases, limite_kmh)
+        return _vacio("sin_bd", f"Todavía no existe la base de datos ({ruta_db.name}).", [], clases, limite_kmh)
     con = abrir_solo_lectura(ruta_db)
     try:
         try:
             todas = consultas.camaras_disponibles(con)
         except sqlite3.OperationalError:
-            return _vacio("sin_tablas", "La base de datos no tiene la tabla `cruces`. "
-                          "Procesa un video para crearla.", [], clases, limite_kmh)
+            return _vacio("sin_tablas", "La base de datos no tiene la tabla de cruces; se crea al procesar un video.", [], clases, limite_kmh)
         nombres = [c["camara"] for c in todas]
         if not nombres:
-            return _vacio("vacia", "La base de datos existe pero aun no tiene cruces.", [], clases, limite_kmh)
+            return _vacio("vacia", "La base de datos existe, pero aún no tiene cruces.", [], clases, limite_kmh)
 
         elegidas = [c for c in (seleccion or nombres) if c in nombres] or nombres
+        # Con UNA camara elegida se conoce su video y su calibracion (lineas, distancia y limite propio).
+        ejecucion = consultas.ultima_ejecucion(con, elegidas[0]) if len(elegidas) == 1 else None
+        camara_ctx = contexto(elegidas[0], ejecucion) if contexto and len(elegidas) == 1 else None
+        if camara_ctx:
+            limite_kmh = float(camara_ctx.get("limite_kmh", limite_kmh))
+        duracion = None
+        if ejecucion and ejecucion.get("fps") and ejecucion.get("frames"):
+            duracion = round(float(ejecucion["frames"]) / float(ejecucion["fps"]), 1)
         totales = {f["tipo"]: f["total"] for f in consultas.total_por_tipo(con, elegidas)}
         total = sum(totales.values())
         por_tipo_vel = {f["tipo"]: f for f in consultas.velocidad_por_tipo(con, elegidas)}
@@ -82,7 +89,14 @@ def construir_panel(
             "mensaje": "",
             "generado": datetime.now().isoformat(timespec="seconds"),
             "camaras": nombres,
+            "camaras_info": todas,
             "seleccion": elegidas,
+            "camara": camara_ctx,
+            "ejecucion": ({"video": ejecucion["video"], "inicio": ejecucion["inicio_video"],
+                           "fps": ejecucion["fps"], "frames": ejecucion["frames"], "duracion_s": duracion}
+                          if ejecucion else None),
+            "por_minuto": [{"t": f["minuto"], "n": f["vehiculos"]} for f in consultas.aforo_por_minuto(con, elegidas)],
+            "filtros": consultas.conteo_por_filtro(con, elegidas, limite_kmh),
             "clases": clases,
             "limite_kmh": limite_kmh,
             "total": total,

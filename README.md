@@ -64,8 +64,8 @@ Opciones de `procesar` (sobrescriben `config.py` solo en esa ejecución): `--vid
 │   ├── evaluacion/             evaluar · anotar_verdad_terreno · verificar_tracking
 │   └── herramientas/           descargar_videos · seleccionar_puntos · capturar_fallas · generar_evidencia_fallas
 ├── dashboard/                  Dashboard web, autocontenido
-│   ├── backend/                API FastAPI: consultas.py (SQL) · panel.py (arma el JSON) · app.py
-│   └── frontend/               index.html · css/ (tokens, base, layout, componentes, gráficos) · js/ (módulos y gráficos SVG)
+│   ├── backend/                API FastAPI: consultas.py (SQL) · panel.py (arma el JSON) · camara.py (calibración y cuadros) · app.py
+│   └── frontend/               index.html · css/ (tokens, base, marco, componentes, gráficos, movimiento) · js/ (vistas, componentes y gráficos SVG)
 ├── datos/                      Datos de ejecución (no se versionan, salvo la verdad de terreno)
 │   ├── videos/  modelos/  db/  salidas/        videos, pesos YOLO, base de datos, video anotado
 │   └── evaluacion/             verdad de terreno anotada a mano (JSON, sí se versiona)
@@ -110,10 +110,27 @@ Modelo ER, DDL y diccionario: [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md).
 
 ## Dashboard
 
-`python -m aforo dashboard` levanta un servidor local (FastAPI + Uvicorn) que sirve la interfaz y la API
-`/api/panel`. El backend solo **lee** la base (`PRAGMA query_only`) y calcula las agregaciones con SQL
-(`GROUP BY`); el frontend dibuja todo (franjas de KPI, gráficos SVG propios, tablas, estado de la vía).
-Con el interruptor "Auto 5 s" se actualiza mientras `procesar` sigue escribiendo.
+`python -m aforo dashboard` levanta un servidor local (FastAPI + Uvicorn) que sirve la interfaz y la API.
+El backend solo **lee** la base (`PRAGMA query_only`) y calcula las agregaciones con SQL (`GROUP BY`).
+
+| Ruta | Qué devuelve |
+|---|---|
+| `/api/panel?camaras=a&percentil=85` | Resumen de una cámara: indicadores, puntos de velocidad, aforo por minuto, estado de la vía, calibración |
+| `/api/cruces?camara=a&filtro=excesos` | Registro de vehículos paginado (filtros: `todos`, `excesos`, `sin_medir`; `tipo`, `track`, `orden`) |
+| `/api/fotograma?camara=a&t=<momento>` | El cuadro del video en el instante del cruce (JPEG), leído con OpenCV de `datos/videos/` |
+
+La interfaz tiene dos vistas:
+
+- **Resumen**: el hallazgo en una frase (cuántos vehículos superaron el límite), cuatro indicadores (aforo,
+  velocidad media, percentil 85 o V85, porcentaje sobre el límite), la velocidad de cada vehículo contra el
+  límite, el aforo por minuto con el estado de la vía, la distribución de velocidades y el desglose por tipo.
+- **Vehículos**: el registro completo con filtros y búsqueda por ID. Al elegir un vehículo se ve **el cuadro
+  del video en que cruzó la línea de conteo**, con las líneas A, B y de conteo dibujadas encima, y cómo se
+  obtuvo su velocidad (distancia del tramo ÷ tiempo).
+
+El límite de velocidad y las líneas de cada cámara salen de `datos/calibraciones.json`. Con el interruptor
+"Actualizar cada 5 s" el panel se refresca mientras `procesar` sigue escribiendo. El diseño sigue el estilo
+"hoja enmarcada" (tipografía IBM Plex Sans, color solo en los datos) y las transiciones de transitions.dev.
 
 ## Evaluación (métricas)
 

@@ -149,5 +149,60 @@ class ApiTest(unittest.TestCase):
         self.assertEqual(self.cliente.get("/css/tokens.css").status_code, 200)
 
 
+class RegistroYFotogramaTest(unittest.TestCase):
+    """Registro paginado de vehiculos, contexto de la camara y cuadros del video."""
+
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.raiz = Path(self._tmp.name)
+        ruta = self.raiz / "database.db"
+        with CrucesDB(ruta) as db:
+            for i, v in enumerate([20.0, 35.0, None, 48.0, 31.0]):
+                db.insertar_cruce(i + 1, "Moto" if i % 2 else "Auto", T0 + timedelta(seconds=10 * i), v, "calle")
+            db.insertar_cruce(9, "Auto", T0, 99.0, "otra")
+        (self.raiz / "datos").mkdir()
+        (self.raiz / "datos" / "calibraciones.json").write_text(
+            '{"calle.mp4": {"CAMARA": "calle", "LINEA_CONTEO": [[5, 0], [5, 9]], "LINEA_VELOCIDAD_A": [[1, 0], [1, 9]], '
+            '"LINEA_VELOCIDAD_B": [[8, 0], [8, 9]], "DISTANCIA_REAL_METROS": 4.7, "LIMITE_VELOCIDAD_KMH": 30.0}}',
+            encoding="utf-8")
+        self.cliente = TestClient(crear_app(ruta, raiz=self.raiz))
+
+    def test_la_camara_usa_el_limite_y_la_calibracion_de_su_perfil(self) -> None:
+        p = self.cliente.get("/api/panel?camaras=calle&percentil=85").json()
+        self.assertEqual((p["limite_kmh"], p["velocidad"]["excesos"]), (30.0, 3))
+        self.assertEqual(p["filtros"], {"todos": 5, "excesos": 3, "sin_medir": 1})
+        self.assertEqual((p["camara"]["distancia_m"], p["camara"]["fotograma"]), (4.7, False))
+        self.assertEqual(p["camara"]["lineas"]["conteo"], [[5.0, 0.0], [5.0, 9.0]])
+        self.assertEqual(sum(m["n"] for m in p["por_minuto"]), p["total"])
+
+    def test_registro_filtra_ordena_y_pagina(self) -> None:
+        r = self.cliente.get("/api/cruces?camara=calle&filtro=excesos&orden=velocidad&cuantos=2").json()
+        self.assertEqual((r["total"], [f["v"] for f in r["filas"]]), (3, [48.0, 35.0]))
+        r = self.cliente.get("/api/cruces?camara=calle&filtro=excesos&orden=velocidad&cuantos=2&desde=2").json()
+        self.assertEqual([f["v"] for f in r["filas"]], [31.0])
+        self.assertEqual(self.cliente.get("/api/cruces?camara=calle&filtro=sin_medir").json()["total"], 1)
+        self.assertEqual(self.cliente.get("/api/cruces?camara=calle&tipo=Moto").json()["total"], 2)
+        self.assertEqual([f["track"] for f in self.cliente.get("/api/cruces?camara=calle&track=4").json()["filas"]], [4])
+
+    def test_registro_valida_parametros_y_no_inyecta(self) -> None:
+        self.assertEqual(self.cliente.get("/api/cruces?camara=calle&filtro=todo").status_code, 422)
+        self.assertEqual(self.cliente.get("/api/cruces?camara=calle&orden=id;DROP").status_code, 422)
+        self.assertEqual(self.cliente.get("/api/cruces", params={"camara": "x') OR 1=1 --"}).json()["total"], 0)
+        self.assertEqual(self.cliente.get("/api/cruces", params={"camara": "calle", "tipo": "' OR 1=1 --"}).json()["total"], 0)
+
+    def test_sin_video_no_hay_fotograma(self) -> None:
+        self.assertEqual(self.cliente.get("/api/fotograma?camara=calle").status_code, 404)
+        self.assertEqual(self.cliente.get("/api/fotograma", params={"camara": "calle", "t": "../../x"}).status_code, 404)
+
+    def test_el_cuadro_corresponde_al_momento_del_cruce(self) -> None:
+        from dashboard.backend.camara import indice_de_cuadro, ruta_video
+        ejecucion = {"inicio_video": "2026-11-09 08:00:00.000", "fps": 30.0, "frames": 900}
+        self.assertEqual(indice_de_cuadro(ejecucion, "2026-11-09 08:00:10.500"), 315)
+        self.assertEqual(indice_de_cuadro(ejecucion, "2026-11-09 09:00:00.000"), 899)     # nunca fuera del video
+        self.assertEqual(indice_de_cuadro(ejecucion, None), 450)
+        self.assertIsNone(ruta_video(self.raiz, "../../secreto.mp4"))                      # solo el nombre, sin carpetas
+
+
 if __name__ == "__main__":
     unittest.main()

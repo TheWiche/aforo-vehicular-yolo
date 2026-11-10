@@ -101,6 +101,67 @@ def cruces_recientes(con: sqlite3.Connection, camaras: Sequence[str], limite: in
     )
 
 
+def aforo_por_minuto(con: sqlite3.Connection, camaras: Sequence[str]) -> List[Dict[str, Any]]:
+    """Vehiculos que cruzaron en cada minuto (el aforo en el tiempo)."""
+    return _filas(
+        con,
+        "SELECT strftime('%Y-%m-%d %H:%M', momento) AS minuto, COUNT(*) AS vehiculos FROM cruces "
+        f"WHERE camara IN ({_marcadores(camaras)}) GROUP BY minuto ORDER BY minuto",
+        camaras,
+    )
+
+
+FILTROS_CRUCES = ("todos", "excesos", "sin_medir")
+
+
+def _donde_cruces(camaras: Sequence[str], limite_kmh: float, filtro: str, tipo: Optional[str],
+                  track: Optional[int]) -> tuple:
+    """Clausula WHERE y parametros del registro de vehiculos (todo con marcadores `?`)."""
+    donde = [f"camara IN ({_marcadores(camaras)})"]
+    parametros: List[Any] = list(camaras)
+    if filtro == "excesos":
+        donde.append("velocidad_kmh > ?")
+        parametros.append(limite_kmh)
+    elif filtro == "sin_medir":
+        donde.append("velocidad_kmh IS NULL")
+    if tipo:
+        donde.append("tipo = ?")
+        parametros.append(tipo)
+    if track is not None:
+        donde.append("track_id = ?")
+        parametros.append(track)
+    return " AND ".join(donde), parametros
+
+
+def cruces_filtrados(con: sqlite3.Connection, camaras: Sequence[str], limite_kmh: float, filtro: str = "todos",
+                     tipo: Optional[str] = None, track: Optional[int] = None, orden: str = "hora",
+                     cuantos: int = 50, desde: int = 0) -> Dict[str, Any]:
+    """Una pagina del registro de vehiculos y el total que cumple el filtro."""
+    donde, parametros = _donde_cruces(camaras, limite_kmh, filtro, tipo, track)
+    # El orden sale de una lista cerrada (nunca del texto del usuario).
+    orden_sql = {"hora": "momento DESC", "velocidad": "velocidad_kmh IS NULL, velocidad_kmh DESC"}.get(orden, "momento DESC")
+    total = con.execute(f"SELECT COUNT(*) FROM cruces WHERE {donde}", parametros).fetchone()[0]
+    filas = _filas(
+        con,
+        f"SELECT id, track_id, tipo, momento, velocidad_kmh, camara FROM cruces WHERE {donde} "
+        f"ORDER BY {orden_sql}, id DESC LIMIT ? OFFSET ?",
+        [*parametros, cuantos, desde],
+    )
+    return {"total": int(total), "filas": filas}
+
+
+def conteo_por_filtro(con: sqlite3.Connection, camaras: Sequence[str], limite_kmh: float) -> Dict[str, int]:
+    """Cuantos cruces hay en cada pestana del registro (todos, sobre el limite, sin medicion)."""
+    fila = _filas(
+        con,
+        "SELECT COUNT(*) AS todos, COALESCE(SUM(velocidad_kmh > ?), 0) AS excesos, "
+        "COALESCE(SUM(velocidad_kmh IS NULL), 0) AS sin_medir "
+        f"FROM cruces WHERE camara IN ({_marcadores(camaras)})",
+        [limite_kmh, *camaras],
+    )[0]
+    return {k: int(v) for k, v in fila.items()}
+
+
 # --- Tablas opcionales: una base creada por una version anterior puede no tenerlas -------------
 def alertas(con: sqlite3.Connection, camaras: Sequence[str], limite: int = 100) -> List[Dict[str, Any]]:
     try:
@@ -124,3 +185,17 @@ def lecturas(con: sqlite3.Connection, camaras: Sequence[str]) -> List[Dict[str, 
         )
     except sqlite3.OperationalError:
         return []
+
+
+def ultima_ejecucion(con: sqlite3.Connection, camara: str) -> Optional[Dict[str, Any]]:
+    """La corrida mas reciente de una camara: de que video salio, cuando empezo y a cuantos FPS."""
+    try:
+        filas = _filas(
+            con,
+            "SELECT video, inicio_video, fps, frames, procesado_en FROM ejecuciones "
+            "WHERE camara = ? ORDER BY id DESC LIMIT 1",
+            [camara],
+        )
+    except sqlite3.OperationalError:
+        return None
+    return filas[0] if filas else None
