@@ -29,7 +29,8 @@ python iniciar.py
 
 1. comprueba Python y crea las carpetas de datos;
 2. comprueba las dependencias y, si faltan, **ofrece instalarlas** (`--si` responde "sí" a todo);
-3. detecta tu **GPU NVIDIA** y, si PyTorch está instalado sin CUDA, ofrece instalar la versión correcta;
+3. detecta tu **GPU NVIDIA** y, si PyTorch está instalado sin CUDA, **instala la versión con CUDA** automáticamente
+   (analizar en CPU es muchas veces más lento, así que con tarjeta NVIDIA no se continúa sin GPU; `--permitir-cpu` lo evita);
 4. valida `config.py`;
 5. levanta el panel y abre el navegador.
 
@@ -46,7 +47,7 @@ Todo el trabajo se hace desde el panel, en este orden (el menú lateral lo sigue
 El análisis corre en un **proceso aparte**: cerrar la pestaña no lo detiene, y si falla el panel sigue vivo. La
 calibración de cada video se guarda en `datos/calibraciones.json` (la misma que usa el menú de terminal).
 
-Opciones del lanzador: `--puerto 8501`, `--no-abrir`, `--si`, `--solo-revisar` (revisa y sale).
+Opciones del lanzador: `--puerto 8501`, `--no-abrir`, `--si`, `--solo-revisar` (revisa y sale), `--permitir-cpu`.
 
 ## Uso por terminal
 
@@ -211,7 +212,8 @@ Sin GPU sirve solo para demostrar; con GPU es fiable. El menú guarda la corrida
 ### Usar la GPU NVIDIA
 
 `pip install torch` en Windows instala la versión **solo-CPU**, y YOLO corre varias veces más lento sin avisar.
-El diagnóstico del menú (opción 9) lo detecta. Para instalar la versión con CUDA (si tu driver soporta CUDA 13):
+`python iniciar.py` lo detecta y lo corrige solo (también el diagnóstico del menú, opción 9, y la sección Sistema del
+panel). Para hacerlo a mano (driver con CUDA 13 o superior; con CUDA 12.6 a 12.9 cambia `cu130` por `cu126`):
 
 ```bash
 pip install --force-reinstall --no-deps torch==2.14.1+cu130 torchvision==0.29.1+cu130 --index-url https://download.pytorch.org/whl/cu130

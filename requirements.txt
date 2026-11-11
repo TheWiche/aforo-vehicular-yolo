@@ -7,6 +7,8 @@
 
 # Deteccion: YOLOv8 pre-entrenado sobre COCO
 ultralytics==8.4.183
+# OJO (Windows): `pip install torch` instala la version SOLO-CPU, muchas veces mas lenta. Con una GPU NVIDIA
+# no instales esto a mano: `python iniciar.py` detecta la tarjeta e instala la build con CUDA (cu130/cu126).
 torch==2.14.1
 torchvision==0.29.1
 

@@ -351,14 +351,44 @@ class LanzadorTest(unittest.TestCase):
         self.assertEqual(iniciar.modulos_faltantes({"cv2": "opencv-python", "torch": "torch", "fastapi": "fastapi"}, existe), ["torch", "fastapi"])
         self.assertEqual(iniciar.modulos_faltantes({"cv2": "x"}, lambda m: object()), [])
 
-    def test_cuda_del_driver_e_indice_de_torch(self) -> None:
-        cabecera = "| NVIDIA-SMI 616.92   Driver Version: 616.92   CUDA Version: 13.4 |"
-        self.assertEqual(iniciar.version_cuda_del_driver(cabecera), (13, 4))
+    def test_cuda_del_driver_se_lee_en_los_dos_formatos_de_nvidia_smi(self) -> None:
+        antiguo = "| NVIDIA-SMI 551.61   Driver Version: 551.61   CUDA Version: 12.4 |"
+        nuevo = "| NVIDIA-SMI 621.14      KMD Version: 621.14        CUDA UMD Version: 13.5 |"
+        self.assertEqual(iniciar.version_cuda_del_driver(antiguo), (12, 4))
+        self.assertEqual(iniciar.version_cuda_del_driver(nuevo), (13, 5))      # el formato que rompia la deteccion
         self.assertIsNone(iniciar.version_cuda_del_driver("sin gpu"))
-        self.assertEqual(iniciar.indice_de_torch((13, 4)), "cu130")
-        self.assertEqual(iniciar.indice_de_torch((12, 8)), "cu126")
-        self.assertIsNone(iniciar.indice_de_torch((12, 1)))
-        self.assertIsNone(iniciar.indice_de_torch(None))
+
+    def test_indices_de_torch_segun_el_driver(self) -> None:
+        self.assertEqual(iniciar.indices_de_torch((13, 5)), ["cu130", "cu126"])
+        self.assertEqual(iniciar.indices_de_torch((12, 8)), ["cu126"])
+        self.assertEqual(iniciar.indices_de_torch((12, 1)), [])                # driver demasiado antiguo
+        self.assertEqual(iniciar.indices_de_torch(None), ["cu130", "cu126"])   # version ilegible: se intenta, no se rinde
+
+    def test_con_tarjeta_nvidia_y_torch_sin_cuda_se_corrige_solo(self) -> None:
+        with contextlib.redirect_stdout(io.StringIO()), \
+                mock.patch.object(iniciar, "_torch_ve_la_gpu", side_effect=[(False, ""), (True, "RTX"), (True, "RTX")]), \
+                mock.patch.object(iniciar, "_nombre_gpu", return_value="RTX"), \
+                mock.patch.object(iniciar, "_nvidia_smi", return_value="CUDA UMD Version: 13.5"), \
+                mock.patch.object(iniciar, "_ejecutar", return_value=True) as ejecutar:
+            self.assertTrue(iniciar.revisar_gpu())
+        self.assertIn("torch==2.14.1+cu130", " ".join(ejecutar.call_args.args[0]))
+
+    def test_si_no_se_puede_activar_la_gpu_no_se_sigue_en_cpu_salvo_que_se_permita(self) -> None:
+        def revisar(permitir: bool) -> bool:
+            with contextlib.redirect_stdout(io.StringIO()), \
+                    mock.patch.object(iniciar, "_torch_ve_la_gpu", return_value=(False, "")), \
+                    mock.patch.object(iniciar, "_nombre_gpu", return_value="RTX"), \
+                    mock.patch.object(iniciar, "_nvidia_smi", return_value="CUDA UMD Version: 13.5"), \
+                    mock.patch.object(iniciar, "_ejecutar", return_value=False):
+                return iniciar.revisar_gpu(permitir)
+        self.assertFalse(revisar(False))
+        self.assertTrue(revisar(True))
+
+    def test_sin_tarjeta_nvidia_se_acepta_la_cpu(self) -> None:
+        with contextlib.redirect_stdout(io.StringIO()), \
+                mock.patch.object(iniciar, "_torch_ve_la_gpu", return_value=(False, "")), \
+                mock.patch.object(iniciar, "_nombre_gpu", return_value=""):
+            self.assertTrue(iniciar.revisar_gpu())
 
     def test_comando_de_torch_con_cuda_fija_las_mismas_versiones_que_requirements(self) -> None:
         cmd = " ".join(iniciar.comando_torch_cuda("cu130", "py"))

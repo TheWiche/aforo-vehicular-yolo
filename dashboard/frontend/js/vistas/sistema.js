@@ -21,7 +21,7 @@ export function crearSistema() {
 
     const gpuTexto = {
       gpu: `<p class="sis-nota">PyTorch ve la tarjeta <b>${esc(gpu.nombre)}</b> y el análisis la usa automáticamente. Con ella, el modo «En vivo» sigue el video a velocidad normal sin perder vehículos.</p>`,
-      cpu_con_gpu: `<p class="sis-nota">Tienes una <b>${esc(gpu.nombre)}</b>, pero PyTorch está instalado sin CUDA, así que el análisis corre en CPU (varias veces más lento). Cierra el panel y ejecuta <b>python iniciar.py</b>: detecta esto y te ofrece instalar la versión correcta. O hazlo a mano:
+      cpu_con_gpu: `<p class="sis-nota">Tienes una <b>${esc(gpu.nombre)}</b>, pero PyTorch está instalado sin CUDA, así que el análisis corre en CPU (varias veces más lento). Cierra el panel y vuelve a ejecutar <b>python iniciar.py</b>: lo detecta y lo corrige solo (instala la versión con CUDA). O hazlo a mano:
         <code class="cmd" id="cmd-gpu">${esc(gpu.comando)}</code>
         <button class="boton contorno" id="copiar-gpu" type="button" style="margin-top:8px">Copiar comando</button></p>`,
       cpu: `<p class="sis-nota">No se detectó una GPU NVIDIA, así que el análisis corre en CPU. Funciona, pero más lento: usa el modo «Rápido, sin vista previa» para videos largos.</p>`,
