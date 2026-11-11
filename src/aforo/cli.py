@@ -23,7 +23,9 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
 
+from aforo import perfiles
 from aforo.config import AppConfig, ConfigError, cargar_configuracion
+from aforo.reporte import Reportero
 
 if TYPE_CHECKING:  # solo para el verificador de tipos; evita importar torch al arrancar
     from aforo.pipeline import PipelineSummary
@@ -46,6 +48,13 @@ def _parsear_argumentos(argv: Optional[List[str]] = None) -> argparse.Namespace:
                          "(abre la ventana y no guarda video; algo menos preciso).")
     ap.add_argument("--imgsz", type=int, help="Tamano de entrada de YOLO en px (menor = mas rapido, p. ej. 640).")
     ap.add_argument("--sin-video", action="store_true", help="No guarda el video anotado (mas rapido).")
+    ap.add_argument("--perfil", action="store_true",
+                    help="Usa la calibracion guardada de este video (datos/calibraciones.json): lineas, distancia y limite.")
+    ap.add_argument("--db", type=Path, help="Base de datos SQLite a usar (sobrescribe DB_RUTA de config.py).")
+    ap.add_argument("--sin-ventana", action="store_true", help="Con --tiempo-real: no abre ventana (la vista previa va a la web).")
+    ap.add_argument("--estado", type=Path, help="Archivo JSON donde se publica el progreso (lo lee el dashboard).")
+    ap.add_argument("--cuadro-vivo", type=Path, help="Archivo JPEG donde se publica el ultimo cuadro anotado.")
+    ap.add_argument("--parar", type=Path, help="Si este archivo aparece, el analisis termina de forma ordenada.")
     ap.add_argument("--camara", type=str, help="Nombre de la camara guardado en la BD (sobrescribe CAMARA de config.py).")
     ap.add_argument("--reemplazar", action="store_true",
                     help="Borra de la BD los cruces previos de esta camara antes de empezar (evita duplicados al repetir una prueba).")
@@ -61,6 +70,16 @@ def _aplicar_argumentos(config: AppConfig, args: argparse.Namespace) -> AppConfi
     io, det, vis = config.io, config.detector, config.visual
     if args.video:
         io = dataclasses.replace(io, video_entrada=args.video.resolve())
+    if args.db:
+        io = dataclasses.replace(io, db_ruta=args.db.resolve())
+    if args.perfil:
+        # Primero el perfil del video; las opciones explicitas de abajo (--camara...) lo sobrescriben.
+        perfil = perfiles.cargar().get(io.video_entrada.name)
+        if perfil is None:
+            raise ConfigError(f"El video '{io.video_entrada.name}' no tiene calibración guardada. "
+                              "Calíbralo primero (dashboard web o menu).")
+        config = perfiles.aplicar_a_config(dataclasses.replace(config, io=io), perfil)
+        io = config.io
     if args.salida:
         io = dataclasses.replace(io, video_salida=args.salida.resolve())
     if args.camara:
@@ -73,7 +92,7 @@ def _aplicar_argumentos(config: AppConfig, args: argparse.Namespace) -> AppConfi
         det = dataclasses.replace(det, modelo=args.modelo.resolve())
     if args.dispositivo:
         det = dataclasses.replace(det, dispositivo=args.dispositivo)
-    if args.mostrar or args.tiempo_real:
+    if args.mostrar or (args.tiempo_real and not args.sin_ventana):
         vis = dataclasses.replace(vis, mostrar_ventana=True)
     if args.tiempo_real:
         vis = dataclasses.replace(vis, tiempo_real=True)
@@ -115,6 +134,25 @@ def _imprimir_resumen(resumen: PipelineSummary) -> None:
     print(linea)
 
 
+def _crear_reportero(args: argparse.Namespace, config: AppConfig) -> Optional[Reportero]:
+    """Reportero hacia la web si se pidio con --estado / --cuadro-vivo / --parar; si no, None."""
+    if not (args.estado or args.cuadro_vivo or args.parar):
+        return None
+    modo = "tiempo_real" if config.visual.tiempo_real else "completo"
+    return Reportero(
+        args.estado, args.cuadro_vivo, args.parar,
+        meta={"video": config.io.video_entrada.name, "camara": config.io.camara, "modo": modo,
+              "limite_kmh": config.alertas.limite_velocidad_kmh},
+    )
+
+
+def _fallo(args: argparse.Namespace, mensaje: str, codigo: int) -> int:
+    """Deja constancia del error en el archivo de estado (para que la web lo muestre) y devuelve el codigo."""
+    if args.estado:
+        Reportero(args.estado, None, None).finalizar("error", mensaje=mensaje)
+    return codigo
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     """Devuelve 0 si todo salio bien o un codigo distinto de 0 si hubo error."""
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s",
@@ -128,18 +166,28 @@ def main(argv: Optional[List[str]] = None) -> int:
         # `python -m aforo procesar --help` y los errores de configuracion respondan al instante.
         from aforo.pipeline import AforoPipeline
 
-        resumen = AforoPipeline(config).run(reemplazar_camara=args.reemplazar)
+        reportero = _crear_reportero(args, config)
+        resumen = AforoPipeline(config, reportero).run(reemplazar_camara=args.reemplazar)
     except ConfigError as exc:
         logger.error("Configuracion invalida: %s", exc)
-        return 2
+        return _fallo(args, f"Configuración inválida: {exc}", 2)
     except FileNotFoundError as exc:
         logger.error("%s", exc)
-        return 3
+        return _fallo(args, str(exc), 3)
     except RuntimeError as exc:     # incluye ModeloError, VideoError y BaseDatosError
         logger.error("%s", exc)
-        return 4
+        return _fallo(args, str(exc), 4)
 
     _imprimir_resumen(resumen)
+    if reportero is not None:
+        reportero.finalizar(
+            "detenido" if resumen.detenido else "terminado",
+            frame=resumen.frames_procesados + resumen.frames_saltados, total_frames=resumen.total_frames,
+            analizados=resumen.frames_procesados, total=resumen.total, por_clase=resumen.conteo_por_clase,
+            mediciones=len(resumen.mediciones), alertas_exceso=resumen.alertas_exceso,
+            alertas_detenido=resumen.alertas_detenido, saltados=resumen.frames_saltados,
+            segundos_proceso=round(resumen.segundos_proceso, 1),
+        )
     return 0
 
 

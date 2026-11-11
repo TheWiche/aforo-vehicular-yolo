@@ -1,20 +1,25 @@
-// Arranque de la interfaz: rutas (#/resumen, #/vehiculos), camara activa, carga de datos y
-// actualizacion automatica. Cada vista vive en su modulo y solo recibe el panel ya cargado.
+// Arranque de la interfaz: rutas, camara activa, carga de datos y actualizacion automatica.
+//
+// Hay dos tipos de vistas:
+//   * de DATOS (resumen, vehiculos): necesitan que la base tenga cruces de la camara elegida;
+//   * de TRABAJO (videos, calibrar, procesar, sistema): funcionan siempre, tambien con la base vacia.
 
 import { pedirPanel } from "./api.js";
-import { duracion, entero, esc, fecha, hora } from "./formato.js";
+import { poner } from "./componentes/texto.js";
+import { duracion, entero, esc, hora } from "./formato.js";
+import { guardado } from "./estado.js";
+import { crearCalibrar } from "./vistas/calibrar.js";
+import { crearProcesar } from "./vistas/procesar.js";
 import { crearResumen } from "./vistas/resumen.js";
+import { crearSistema } from "./vistas/sistema.js";
 import { crearVehiculos } from "./vistas/vehiculos.js";
+import { crearVideos } from "./vistas/videos.js";
 
 const $ = (id) => document.getElementById(id);
 const INTERVALO_MS = 5000;
-const VISTAS = ["resumen", "vehiculos"];
-
-// ----------------------------- Preferencias guardadas -----------------------------
-const guardado = {
-  leer(clave) { try { return localStorage.getItem(clave); } catch { return null; } },
-  escribir(clave, valor) { try { localStorage.setItem(clave, valor); } catch { /* modo privado */ } },
-};
+const VISTAS = ["videos", "calibrar", "procesar", "resumen", "vehiculos", "sistema"];     // orden = direccion del deslizamiento
+const VISTAS_DE_DATOS = ["resumen", "vehiculos"];
+const TITULOS = { resumen: "Resumen", vehiculos: "Vehículos", videos: "Videos", calibrar: "Calibrar", procesar: "Procesar", sistema: "Sistema" };
 
 let panel = null;
 let camara = guardado.leer("aforo.camara");
@@ -25,7 +30,10 @@ let vistaActual = "";
 // ------------------------------------- Rutas -------------------------------------
 function ruta() {
   const [camino, consulta = ""] = location.hash.replace(/^#\/?/, "").split("?");
-  return { vista: VISTAS.includes(camino) ? camino : "resumen", parametros: Object.fromEntries(new URLSearchParams(consulta)) };
+  return {
+    vista: VISTAS.includes(camino) ? camino : null,
+    parametros: Object.fromEntries(new URLSearchParams(consulta)),
+  };
 }
 function irA(vista, parametros = {}) {
   const limpio = Object.entries(parametros).filter(([clave, valor]) =>
@@ -34,13 +42,35 @@ function irA(vista, parametros = {}) {
   location.hash = `#/${vista}${consulta ? "?" + consulta : ""}`;
 }
 
+// --------------------------------------- Vistas ---------------------------------------
 const resumen = crearResumen();
 const vehiculos = crearVehiculos((parametros) => irA("vehiculos", parametros));
+const videos = crearVideos();
+const calibrar = crearCalibrar({ irA });
+const sistema = crearSistema();
+const procesar = crearProcesar({
+  alEstado: pintarIndicador,
+  alTerminar: async (datos) => {
+    // El analisis acaba de terminar: se recarga el panel y se deja elegida su camara.
+    if (datos.camara) { camara = datos.camara; guardado.escribir("aforo.camara", camara); }
+    firmaDatos = "";
+    await cargar();
+  },
+});
+
+/** Indicador junto a "Procesar" en el menu: el avance mientras hay un analisis en marcha. */
+function pintarIndicador(datos) {
+  const chip = $("nav-proceso");
+  const enMarcha = datos.estado === "corriendo" || datos.estado === "iniciando";
+  chip.hidden = !enMarcha;
+  if (enMarcha) poner(chip, datos.estado === "iniciando" ? "…" : `${Math.round((datos.progreso || 0) * 100)} %`);
+}
 
 function mostrarVista(nombre) {
   const anterior = vistaActual;
+  if (anterior && anterior !== nombre && anterior === "procesar") procesar.ocultar();
   vistaActual = nombre;
-  for (const id of ["resumen", "vehiculos", "estado"]) {
+  for (const id of [...VISTAS, "estado"]) {
     const seccion = $(`vista-${id}`);
     const visible = id === nombre;
     seccion.hidden = !visible;
@@ -55,31 +85,55 @@ function mostrarVista(nombre) {
   document.querySelectorAll(".nav-item").forEach((a) => {
     if (a.dataset.vista === nombre) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current");
   });
+  // La lista de camaras solo importa al mirar resultados.
+  $("grupo-camaras").hidden = !VISTAS_DE_DATOS.includes(nombre) || !panel || panel.estado !== "ok";
+  $("buscador").hidden = nombre !== "vehiculos";
   document.body.classList.remove("menu-abierto", "detalle-abierto");
+  window.scrollTo(0, 0);
 }
 
+function hayDatos() { return panel && panel.estado === "ok"; }
+
 function aplicarRuta(forzar = false) {
-  if (!panel || panel.estado !== "ok") return;
-  const { vista, parametros } = ruta();
-  mostrarVista(vista);
-  if (vista === "vehiculos") {
-    vehiculos.mostrar(panel, parametros, forzar);
-    $("buscar").value = parametros.id || "";
-  } else {
-    resumen.redibujar();
+  const { vista: pedida, parametros } = ruta();
+  // Sin direccion: se abre el resumen si ya hay resultados y, si no, el primer paso del flujo.
+  const vista = pedida || (hayDatos() ? "resumen" : "videos");
+  if (!pedida && location.hash === "") history.replaceState(null, "", `#/${vista}`);
+
+  if (VISTAS_DE_DATOS.includes(vista)) {
+    if (!hayDatos()) {
+      $("h-estado").textContent = "Aún no hay datos";
+      $("estado-mensaje").textContent = panel ? panel.mensaje : "";
+      mostrarVista("estado");
+      document.title = "Aforo vial";
+      return;
+    }
+    mostrarVista(vista);
+    if (vista === "vehiculos") { vehiculos.mostrar(panel, parametros, forzar); $("buscar").value = parametros.id || ""; }
+    else resumen.redibujar();
+    document.title = `${TITULOS[vista]} · ${panel.seleccion[0]} · Aforo vial`;
+    return;
   }
-  document.title = `${vista === "vehiculos" ? "Vehículos" : "Resumen"} · ${panel.seleccion[0]} · Aforo vial`;
+
+  const cambio = vista !== vistaActual;
+  // Una recarga de datos (forzar) no debe reiniciar la vista de trabajo en la que se esta (p. ej. un analisis en curso).
+  if (forzar && !cambio) return;
+  mostrarVista(vista);
+  document.title = `${TITULOS[vista]} · Aforo vial`;
+  if (vista === "videos") videos.mostrar();
+  else if (vista === "calibrar") calibrar.mostrar(parametros);
+  else if (vista === "procesar") procesar.mostrar(parametros);
+  else if (vista === "sistema" && (cambio || forzar)) sistema.mostrar();
 }
 
 // --------------------------------- Marco: camaras ---------------------------------
 function pintarMarco() {
+  if (!hayDatos()) { $("camaras").innerHTML = ""; $("ambito").textContent = ""; return; }
   const info = panel.camaras_info || [];
-  $("camaras").innerHTML = info.map((c) => {
-    return `<button class="camara" type="button" role="radio" aria-checked="${c.camara === camara}" data-camara="${esc(c.camara)}">
+  $("camaras").innerHTML = info.map((c) => `<button class="camara" type="button" role="radio" aria-checked="${c.camara === camara}" data-camara="${esc(c.camara)}">
       <span><span class="camara-nombre">${esc(c.camara)}</span>
       <span class="camara-nota">${entero(c.cruces)} ${c.cruces === 1 ? "cruce" : "cruces"}</span></span>
-    </button>`;
-  }).join("");
+    </button>`).join("");
   const e = panel.ejecucion;
   $("ambito").innerHTML = `<b>${esc(camara)}</b>${e ? ` · ${esc(e.video)}${e.duracion_s ? ` · ${duracion(e.duracion_s)}` : ""}` : ""}`;
 }
@@ -93,15 +147,6 @@ $("camaras").addEventListener("click", (evento) => {
 });
 
 // -------------------------------- Carga de datos --------------------------------
-function estadoSinDatos(titulo, mensaje) {
-  $("h-estado").textContent = titulo;
-  $("estado-mensaje").textContent = mensaje;
-  mostrarVista("estado");
-  $("camaras").innerHTML = "";
-  $("ambito").textContent = "";
-  document.title = "Aforo vial";
-}
-
 function aviso(mensaje) {
   let caja = $("aviso");
   if (!mensaje) { caja?.remove(); return; }
@@ -128,27 +173,29 @@ async function cargar({ silencioso = false } = {}) {
       nuevo = await pedirPanel(camara);
     }
   } catch (error) {
-    if (panel && panel.estado === "ok") {
+    if (hayDatos()) {
       aviso(`No se pudo actualizar (${error.message}). Se muestran los datos de las ${hora(panel.generado)}.`);
     } else {
-      estadoSinDatos("Sin conexión con el panel", "No se pudo hablar con el servidor. Comprueba que `python -m aforo dashboard` sigue abierto.");
+      aviso(`${error.message}`);
+      panel = null;
+      aplicarRuta();
     }
     return;
   }
   aviso(null);
+  const cambioDeCamara = !hayDatos() || nuevo.estado !== "ok" || panel.seleccion[0] !== nuevo.seleccion[0];
+  const habiaDatos = hayDatos();
+  panel = nuevo;
   if (nuevo.estado !== "ok") {
-    panel = nuevo;
-    estadoSinDatos("Aún no hay datos", nuevo.mensaje);
+    pintarMarco();
+    aplicarRuta();
     return;
   }
-  const cambioDeCamara = !panel || panel.estado !== "ok" || panel.seleccion[0] !== nuevo.seleccion[0];
   const firma = JSON.stringify([nuevo.seleccion, nuevo.total, nuevo.ultimo_cruce, nuevo.alertas.length, nuevo.lecturas.length, nuevo.limite_kmh, nuevo.camaras_info]);
-  panel = nuevo;
   $("actualizado").textContent = `Actualizado ${hora(panel.generado)}`;
-  if (silencioso && firma === firmaDatos) return;         // nada nuevo: solo cambia el sello de hora
+  if (silencioso && firma === firmaDatos && habiaDatos) return;         // nada nuevo: solo cambia el sello de hora
   firmaDatos = firma;
   pintarMarco();
-  if (vistaActual === "estado" || !vistaActual) mostrarVista(ruta().vista);
   resumen.pintar(panel, cambioDeCamara);
   aplicarRuta(true);
 }
@@ -191,8 +238,11 @@ $("menu-abrir").addEventListener("click", () => { document.body.classList.add("m
 $("menu-cerrar").addEventListener("click", () => { document.body.classList.remove("menu-abierto"); $("menu-abrir").focus(); });
 
 window.addEventListener("hashchange", () => aplicarRuta());
+// Cambios sin guardar en el calibrador: el navegador avisa antes de cerrar la pestana.
+window.addEventListener("beforeunload", (e) => { if (calibrar.haySinGuardar()) { e.preventDefault(); e.returnValue = ""; } });
 
 // ------------------------------------- Inicio -------------------------------------
 fijarAuto(guardado.leer("aforo.auto") === "1", true);
+procesar.retomar();
 // Las etiquetas de los graficos se miden con la fuente ya cargada.
 (document.fonts ? document.fonts.ready : Promise.resolve()).then(() => cargar());

@@ -138,8 +138,8 @@ def indice_de_cuadro(ejecucion: Dict[str, Any], momento: Optional[str]) -> int:
     return max(0, min(indice, max(total - 1, 0)))
 
 
-@lru_cache(maxsize=64)
-def _cuadro_jpeg(ruta: str, _mtime: float, indice: int) -> Optional[bytes]:
+@lru_cache(maxsize=96)
+def _cuadro_jpeg(ruta: str, _mtime: float, indice: int, ancho_maximo: int = ANCHO_MAXIMO) -> Optional[bytes]:
     try:
         import cv2
     except ImportError:
@@ -156,8 +156,8 @@ def _cuadro_jpeg(ruta: str, _mtime: float, indice: int) -> Optional[bytes]:
     if not ok or cuadro is None:
         return None
     alto, ancho = cuadro.shape[:2]
-    if ancho > ANCHO_MAXIMO:
-        cuadro = cv2.resize(cuadro, (ANCHO_MAXIMO, round(alto * ANCHO_MAXIMO / ancho)), interpolation=cv2.INTER_AREA)
+    if ancho > ancho_maximo:
+        cuadro = cv2.resize(cuadro, (ancho_maximo, round(alto * ancho_maximo / ancho)), interpolation=cv2.INTER_AREA)
     ok, datos = cv2.imencode(".jpg", cuadro, [cv2.IMWRITE_JPEG_QUALITY, CALIDAD_JPEG])
     return datos.tobytes() if ok else None
 

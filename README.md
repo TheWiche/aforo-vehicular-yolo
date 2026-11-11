@@ -19,9 +19,38 @@ pip install -r requirements.txt   # instala las dependencias y el paquete `aforo
 > Probado con Python 3.12. Para usar GPU NVIDIA instala antes la build CUDA de PyTorch
 > (ver pytorch.org) y luego el resto.
 
-## Uso rápido
+## Uso rápido: un solo archivo
 
-Todo cuelga de un solo comando, `python -m aforo`:
+```bash
+python iniciar.py
+```
+
+`iniciar.py` revisa que todo esté listo y, solo entonces, abre el panel web en <http://localhost:8501>:
+
+1. comprueba Python y crea las carpetas de datos;
+2. comprueba las dependencias y, si faltan, **ofrece instalarlas** (`--si` responde "sí" a todo);
+3. detecta tu **GPU NVIDIA** y, si PyTorch está instalado sin CUDA, ofrece instalar la versión correcta;
+4. valida `config.py`;
+5. levanta el panel y abre el navegador.
+
+Todo el trabajo se hace desde el panel, en este orden (el menú lateral lo sigue):
+
+| Sección | Qué haces |
+|---|---|
+| **Videos** | Ves los videos con miniatura y estado ("calibrado · 181 cruces"). Agregas uno pegando su ruta (sin copiarlo) o subiéndolo. |
+| **Calibrar** | Eliges un cuadro con la barra de tiempo y **arrastras las tres líneas** (conteo, A y B) sobre la imagen; o escribes sus coordenadas. Indicas los metros entre A y B (hay una regla de referencia para calcularlos), el límite de velocidad y el nombre de la cámara. Valida en vivo y explica cómo se obtiene la velocidad con tus números. |
+| **Procesar** | Eliges el modo (en vivo a velocidad normal, todos los cuadros, o rápido) y pulsas Iniciar. Ves el video anotado **en vivo**, el avance, los vehículos contados y la velocidad de análisis. Puedes detenerlo. |
+| **Resumen** y **Vehículos** | Los resultados: aforo, velocidades, excesos y, para cada vehículo, el cuadro del video en que cruzó. |
+| **Sistema** | Estado del entorno: Python, paquetes, GPU y modelos. |
+
+El análisis corre en un **proceso aparte**: cerrar la pestaña no lo detiene, y si falla el panel sigue vivo. La
+calibración de cada video se guarda en `datos/calibraciones.json` (la misma que usa el menú de terminal).
+
+Opciones del lanzador: `--puerto 8501`, `--no-abrir`, `--si`, `--solo-revisar` (revisa y sale).
+
+## Uso por terminal
+
+Todo cuelga también de un solo comando, `python -m aforo`:
 
 ```bash
 python -m aforo                       # menú interactivo (revisa qué tienes y qué te falta)
@@ -34,7 +63,7 @@ python -m aforo --help                # lista de comandos
 | `python -m aforo descargar` | Descarga videos de tráfico de prueba a `datos/videos/` |
 | `python -m aforo calibrar` | Obtiene coordenadas de las líneas haciendo clic en un frame |
 | `python -m aforo procesar` | Procesa un video → detección, conteo, velocidad, alertas → base de datos |
-| `python -m aforo dashboard` | Abre el dashboard web en http://localhost:8501 |
+| `python -m aforo dashboard` | Abre el dashboard web (sin revisar el entorno; para eso usa `python iniciar.py`) |
 | `python -m aforo anotar` / `evaluar` | Verdad de terreno a mano y métricas (precisión, recall, F1, MAE) |
 | `python -m aforo auditar` | Audita la unicidad y estabilidad de los IDs del tracker |
 
@@ -48,15 +77,19 @@ python -m aforo dashboard
 
 Opciones de `procesar` (sobrescriben `config.py` solo en esa ejecución): `--video`, `--salida`, `--modelo`,
 `--imgsz`, `--sin-video`, `--dispositivo`, `--mostrar` (ventana en vivo), `--camara NOMBRE`, `--reemplazar`
-(borra de la BD los datos previos de esa cámara para repetir una prueba sin duplicar filas).
+(borra de la BD los datos previos de esa cámara para repetir una prueba sin duplicar filas), `--perfil` (usa la
+calibración guardada del video en `datos/calibraciones.json`), `--db RUTA` y `--tiempo-real`.
+Las opciones `--estado`, `--cuadro-vivo` y `--parar` son el canal con el panel web (progreso, video en vivo y parada).
 
 ## Estructura del proyecto
 
 ```
 .
+├── iniciar.py                  Lanzador único: revisa el entorno y abre el panel web
 ├── src/aforo/                  Paquete Python con toda la lógica del sistema
 │   ├── config.py               Configuración centralizada (rutas, líneas, metros, umbrales)  ← lo que editas
 │   ├── cli.py · pipeline.py    Línea de comandos de `procesar` y orquestación del flujo
+│   ├── perfiles.py · reporte.py  Calibración por video (JSON) y canal de progreso hacia la web
 │   ├── menu.py · __main__.py   Menú interactivo y comando único `python -m aforo`
 │   ├── vision/                 detector (YOLOv8) · tracker (ByteTrack) · movimiento · visualizer
 │   ├── analitica/              geometry · line_counter · speed_estimator · alertas (reglas de negocio)
@@ -64,7 +97,8 @@ Opciones de `procesar` (sobrescriben `config.py` solo en esa ejecución): `--vid
 │   ├── evaluacion/             evaluar · anotar_verdad_terreno · verificar_tracking
 │   └── herramientas/           descargar_videos · seleccionar_puntos · capturar_fallas · generar_evidencia_fallas
 ├── dashboard/                  Dashboard web, autocontenido
-│   ├── backend/                API FastAPI: consultas.py (SQL) · panel.py (arma el JSON) · camara.py (calibración y cuadros) · app.py
+│   ├── backend/                API FastAPI: consultas.py (SQL) · panel.py (JSON del resumen) · camara.py (cuadros de evidencia) ·
+│   │                           videos.py · proceso.py (lanza y vigila el análisis) · sistema.py · app.py
 │   └── frontend/               index.html · css/ (tokens, base, marco, componentes, gráficos, movimiento) · js/ (vistas, componentes y gráficos SVG)
 ├── datos/                      Datos de ejecución (no se versionan, salvo la verdad de terreno)
 │   ├── videos/  modelos/  db/  salidas/        videos, pesos YOLO, base de datos, video anotado
@@ -110,14 +144,20 @@ Modelo ER, DDL y diccionario: [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md).
 
 ## Dashboard
 
-`python -m aforo dashboard` levanta un servidor local (FastAPI + Uvicorn) que sirve la interfaz y la API.
-El backend solo **lee** la base (`PRAGMA query_only`) y calcula las agregaciones con SQL (`GROUP BY`).
+`python iniciar.py` (o `python -m aforo dashboard`) levanta un servidor local (FastAPI + Uvicorn) que sirve la
+interfaz y la API. Los resultados se leen de la base en **solo lectura** (`PRAGMA query_only`) y las agregaciones
+se calculan con SQL (`GROUP BY`); lo único que el servidor escribe es la calibración y los videos subidos, y el
+análisis (que sí escribe en la base) corre en un proceso aparte. El servidor escucha solo en `127.0.0.1`.
 
 | Ruta | Qué devuelve |
 |---|---|
 | `/api/panel?camaras=a&percentil=85` | Resumen de una cámara: indicadores, puntos de velocidad, aforo por minuto, estado de la vía, calibración |
 | `/api/cruces?camara=a&filtro=excesos` | Registro de vehículos paginado (filtros: `todos`, `excesos`, `sin_medir`; `tipo`, `track`, `orden`) |
 | `/api/fotograma?camara=a&t=<momento>` | El cuadro del video en el instante del cruce (JPEG), leído con OpenCV de `datos/videos/` |
+| `/api/videos` · `/api/videos/cuadro` · `/api/videos/agregar` · `/api/videos/subir` | Lista de videos, cuadros para el calibrador, alta por ruta o por subida |
+| `/api/calibracion` (GET/PUT) | Perfil de calibración de un video: lee, valida y guarda |
+| `/api/proceso` · `/iniciar` · `/detener` · `/video` | Control y seguimiento del análisis; `/video` es el flujo MJPEG en vivo |
+| `/api/sistema` | Diagnóstico del entorno (solo lectura) |
 
 La interfaz tiene dos vistas:
 

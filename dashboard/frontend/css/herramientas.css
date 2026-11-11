@@ -1,0 +1,214 @@
+/*
+ * Vistas de trabajo: Videos, Calibrar, Procesar y Sistema, mas los controles que comparten
+ * (campos, chips, barras de progreso). Mismo sistema de diseno: bordes de 1px, color solo en los datos.
+ */
+:root {
+  --pill-positive-bg: #dcfae5;  --pill-positive-ink: #04250e;
+  --pill-warning-bg: #fffbeb;   --pill-warning-ink: #92400e;
+  --pill-neutral-bg: #ebedee;   --pill-neutral-ink: #353736;
+  --pill-negative-bg: #ffedea;  --pill-negative-ink: #831c1e;
+  --warning: #92400e;
+}
+
+/* ------------------------------ Navegacion: grupos y estado ------------------------------ */
+.nav .grupo-titulo { margin: 16px 0 4px; }
+.nav .grupo-titulo:first-child { margin-top: 0; }
+.nav-item .nav-texto { flex: 1; }
+.nav-estado {
+  font-size: 12px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--accent);
+  padding: 0 6px; border-radius: var(--radius-chip); background: #e3edf8;
+}
+.lateral-pie .nav-item { margin: 0 -4px; }
+
+/* --------------------------------------- Controles --------------------------------------- */
+.entrada {
+  width: 100%; height: var(--control-height); padding: 0 10px;
+  border: 1px solid var(--control); border-radius: var(--radius-control); background: var(--surface);
+  transition: border-color var(--duration-quick) var(--ease-out);
+}
+select.entrada {
+  padding-right: 30px; appearance: none;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%235a5e62' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 11px center;
+}
+.entrada:hover { border-color: #b4b9be; }
+.entrada:focus-visible { outline: 0; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.entrada[aria-invalid="true"] { border-color: var(--negative); }
+.con-unidad { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.con-unidad .entrada { width: 120px; }
+.campo-bloque + .campo-bloque { margin-top: 16px; }
+.campo-bloque > label { display: block; margin-bottom: 6px; font-weight: 500; }
+.nota { margin-top: 6px; font-size: 12px; line-height: 18px; color: var(--muted); }
+.error { margin-top: 12px; padding: 8px 12px; border-radius: var(--radius-control); background: var(--pill-negative-bg); color: var(--pill-negative-ink); font-size: 13px; line-height: 18px; }
+.boton:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.ancho-total { width: 100%; }
+.acciones { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.fila-campo { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.fila-campo .entrada { flex: 1; min-width: 180px; width: auto; }
+label.boton { cursor: pointer; }
+.solo-lectores:focus-visible + .nota, input.solo-lectores:focus-visible ~ .nota { text-decoration: underline; }
+label.boton:has(+ input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.chip {
+  display: inline-flex; align-items: center; height: 20px; padding: 0 8px; flex: none; white-space: nowrap;
+  border-radius: 10px; font-size: 12px; font-weight: 500;
+  background: var(--pill-neutral-bg); color: var(--pill-neutral-ink);
+}
+.chip.ok { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
+.chip.aviso { background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
+.chip.mal { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+
+/* Barras de progreso: la pista es un tono mas oscuro que la hoja; el relleno es el ratio verdadero */
+.progreso { height: 8px; border-radius: 4px; background: var(--active); overflow: hidden; }
+.progreso.fino { height: 4px; margin-top: 12px; }
+.progreso > span { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 4px; transition: width var(--duration-medium) var(--ease-smooth-out); }
+.progreso.listo > span { background: var(--positive); }
+
+/* ------------------------------------------ Videos ------------------------------------------ */
+.agregar { margin-bottom: var(--gap); }
+.agregar h3 { font-size: 14px; font-weight: 600; }
+.agregar-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); margin-top: 12px; }
+.agregar-col .nota { margin: 4px 0 12px; }
+
+.videos li { display: grid; grid-template-columns: 128px minmax(0, 1fr) auto; align-items: center; gap: 16px; padding: 12px var(--card-pad); }
+.videos li + li { border-top: 1px solid var(--rule); }
+.videos li[aria-current="true"] { background: var(--raised); }
+.miniatura { width: 128px; height: 72px; border-radius: var(--radius-chip); background: var(--raised); object-fit: cover; display: block; }
+.miniatura-vacia { display: grid; place-items: center; width: 128px; height: 72px; border-radius: var(--radius-chip); background: var(--raised); color: var(--muted); font-size: 12px; }
+.video-nombre { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.video-meta { margin-top: 2px; font-size: 12px; line-height: 18px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.video-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.video-acciones { display: flex; gap: 8px; }
+.vacio-lista { padding: 24px var(--card-pad); color: var(--muted); }
+
+/* ----------------------------------------- Calibrar ----------------------------------------- */
+.rejilla.calib, .rejilla.proc { grid-template-columns: minmax(0, 1fr) 420px; align-items: start; }
+.rejilla.calib .principal, .rejilla.proc .principal { gap: var(--gap); }
+.calibrador { padding: 0; overflow: hidden; }
+.lienzo { position: relative; background: var(--raised); touch-action: none; user-select: none; outline: 0; line-height: 0; }
+.lienzo:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.lienzo img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; object-fit: fill; transition: opacity var(--duration-quick) var(--ease-out); }
+.lienzo.cargando img { opacity: 0.55; }
+.lienzo > svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.lienzo.dibujando { cursor: crosshair; }
+.cal-barra { padding: 12px 16px 14px; border-top: 1px solid var(--rule); line-height: 20px; }
+.cal-tiempo { display: flex; align-items: center; gap: 8px; }
+.cal-tiempo input[type="range"] { flex: 1; min-width: 0; accent-color: var(--accent); height: 24px; }
+.cal-reloj { min-width: 84px; text-align: right; color: var(--muted); font-size: 13px; }
+.cal-barra .nota { margin-top: 4px; }
+
+.ed-casing { stroke: rgba(19, 20, 22, 0.55); stroke-width: 5; fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.ed-linea { stroke: #ffffff; stroke-width: 2; fill: none; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+.ed-linea.punteada { stroke-dasharray: 7 5; }
+.ed-casing.conteo { stroke-width: 6; }
+.ed-linea.conteo { stroke-width: 3; }
+.ed-linea.regla { stroke: #8ab8ee; stroke-dasharray: 2 5; stroke-width: 3; }
+.ed-golpe { stroke: transparent; stroke-width: 22; fill: none; vector-effect: non-scaling-stroke; cursor: move; pointer-events: stroke; }
+.ed-asa { fill: #ffffff; stroke: rgba(19, 20, 22, 0.8); stroke-width: 2; vector-effect: non-scaling-stroke; cursor: grab; transition: fill var(--duration-quick) var(--ease-out); }
+.ed-asa:hover { fill: #dbe8f7; }
+.ed-asa:active { cursor: grabbing; }
+.ed-grupo.elegida .ed-asa { fill: var(--accent); stroke: #ffffff; }
+.ed-grupo.elegida .ed-casing { stroke: rgba(19, 20, 22, 0.8); }
+.ed-rotulo {
+  position: absolute; transform: translate(-50%, -100%); margin-top: -14px; z-index: 2;
+  padding: 1px 7px; border-radius: var(--radius-chip); background: rgba(19, 20, 22, 0.86); color: #ffffff;
+  font-size: 12px; line-height: 18px; font-weight: 500; white-space: nowrap; pointer-events: none;
+}
+.ed-rotulo.regla { background: var(--accent); }
+.ed-rotulo.cota { transform: translate(-50%, 0); margin-top: 6px; }
+
+.linea-fila { padding: 12px var(--card-pad) 14px; border: 0; width: 100%; background: none; display: block; text-align: left; }
+.linea-fila + .linea-fila { border-top: 1px solid var(--rule); }
+.linea-fila.elegida { background: var(--raised); }
+.linea-cab { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.linea-muestra { flex: none; width: 28px; height: 10px; }
+.linea-muestra line { stroke: var(--text); stroke-width: 2; stroke-linecap: round; }
+.linea-nombre { font-weight: 500; }
+.linea-desc { margin: 2px 0 8px 38px; font-size: 12px; line-height: 18px; color: var(--muted); }
+.linea-coords { margin-left: 38px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.linea-coords label { display: block; font-size: 11px; line-height: 16px; color: var(--muted); }
+.linea-coords .entrada { height: 28px; padding: 0 6px; font-variant-numeric: tabular-nums; }
+
+.regla { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--rule); }
+.regla-detalle { margin-top: 12px; }
+.resultado { margin: 12px 0; font-size: 13px; line-height: 20px; font-variant-numeric: tabular-nums; }
+.resultado b { font-weight: 600; }
+
+.guardar { margin-top: 16px; display: grid; gap: 12px; }
+.avisos { display: grid; gap: 6px; }
+.avisos li { padding: 8px 12px; border-radius: var(--radius-control); font-size: 13px; line-height: 18px; background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
+.avisos li.mal { background: var(--pill-negative-bg); color: var(--pill-negative-ink); }
+.avisos li.bien { background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
+.guardado { font-size: 13px; color: var(--positive); }
+.guardado a { text-decoration: underline; text-underline-offset: 3px; font-weight: 500; }
+.explica { font-size: 14px; line-height: 22px; max-width: 70ch; }
+.explica b { font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* ----------------------------------------- Procesar ----------------------------------------- */
+.en-vivo .foto { aspect-ratio: 16 / 9; background: var(--raised); }
+.progreso-bloque { padding: 12px var(--card-pad) 14px; border-top: 1px solid var(--rule); }
+.progreso-texto { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-size: 13px; color: var(--muted); }
+.progreso-texto .num { color: var(--text); font-weight: 500; }
+.kpis.cuatro { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.modos { margin: 16px 0 0; padding: 0; border: 0; display: grid; gap: 8px; }
+.modos legend { padding: 0; margin-bottom: 8px; font-weight: 500; }
+.modo { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-control); cursor: pointer; transition: border-color var(--duration-quick) var(--ease-out), background-color var(--duration-quick) var(--ease-out); }
+.modo:hover { background: var(--raised); }
+.modo:has(input:checked) { border-color: var(--accent); background: var(--raised); }
+.modo input { margin: 3px 0 0; accent-color: var(--accent); flex: none; }
+.modo-cuerpo b { display: block; font-weight: 500; }
+.modo-cuerpo small, .casilla small { display: block; font-size: 12px; line-height: 18px; color: var(--muted); }
+.modo.recomendado .modo-cuerpo b::after { content: "Recomendado"; margin-left: 8px; padding: 1px 6px; border-radius: 10px; font-size: 11px; font-weight: 500; background: var(--pill-positive-bg); color: var(--pill-positive-ink); }
+.casilla { display: flex; align-items: flex-start; gap: 10px; margin-top: 14px; cursor: pointer; }
+.casilla input { margin: 3px 0 0; accent-color: var(--accent); flex: none; }
+.registro-tec { margin: 0; max-height: 220px; overflow: auto; font: 400 12px/18px var(--mono); color: var(--muted); white-space: pre-wrap; word-break: break-word; }
+.final { display: grid; gap: 12px; }
+.final h2 { font-size: var(--fs-section); }
+.final p { color: var(--muted); }
+.final .acciones { margin-top: 0; }
+.final.mal { border-color: var(--negative); }
+
+/* ------------------------------------------ Sistema ------------------------------------------ */
+.sistema-rejilla { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); align-items: start; }
+.sistema-rejilla .tarjeta { padding: 0; overflow: hidden; }
+.sis-cab { padding: 16px var(--card-pad) 8px; }
+.sis-cab p { margin-top: 2px; font-size: 13px; color: var(--muted); }
+.sis-fila { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; padding: 8px var(--card-pad); border-top: 1px solid var(--rule); }
+.sis-fila .l2 { display: block; font-size: 12px; line-height: 16px; color: var(--muted); }
+.sis-nota { padding: 12px var(--card-pad) 16px; border-top: 1px solid var(--rule); font-size: 13px; line-height: 20px; color: var(--muted); }
+.cmd { position: relative; margin: 8px 0 0; padding: 10px 12px; background: var(--raised); border-radius: var(--radius-control); font: 400 12px/18px var(--mono); color: var(--text); white-space: pre-wrap; word-break: break-all; }
+.pasos { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+/* ------------------------------------- Tableta y telefono ------------------------------------- */
+@media (max-width: 1100px) {
+  .rejilla.calib, .rejilla.proc { grid-template-columns: minmax(0, 1fr); }
+  .sistema-rejilla { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .videos li { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 12px 16px; }
+  .miniatura, .miniatura-vacia { width: 96px; height: 54px; }
+  .video-acciones { grid-column: 1 / -1; }
+  .video-acciones .boton { flex: 1; height: 40px; }
+  .agregar-cols { grid-template-columns: minmax(0, 1fr); }
+  .linea-coords { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-left: 0; }
+  .linea-desc { margin-left: 0; }
+  .entrada { height: 40px; font-size: 16px; }
+  .linea-coords .entrada { height: 40px; }
+  .kpis.cuatro { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cal-reloj { min-width: 64px; }
+  .acciones .boton { flex: 1; height: 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progreso > span, .lienzo img, .modo, .ed-asa, .entrada { transition: none !important; }
+}
+
+/* Editor de lineas: el fondo solo recibe clics mientras se dibuja una linea nueva */
+.ed-fondo { pointer-events: none; }
+.dibujando .ed-fondo { pointer-events: all; }
+.dibujando .ed-grupo, .dibujando .ed-grupo * { pointer-events: none; }
+
+/* El lienzo acompaña al formulario al desplazarse: se editan los números viendo las líneas */
+@media (min-width: 1101px) {
+  .rejilla.calib .principal { position: sticky; top: 64px; align-self: start; }
+}
+.regla .enlace { text-align: left; }

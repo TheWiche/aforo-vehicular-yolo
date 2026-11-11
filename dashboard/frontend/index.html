@@ -31,6 +31,22 @@
       </div>
 
       <nav class="nav" aria-label="Secciones">
+        <p class="grupo-titulo">Preparar</p>
+        <a class="nav-item" href="#/videos" data-vista="videos">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="2" y="3.5" width="9" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M11 7l3-1.8v5.6L11 9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          Videos
+        </a>
+        <a class="nav-item" href="#/calibrar" data-vista="calibrar">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 5h11M2.5 11h11M8 2.5v11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/></svg>
+          Calibrar
+        </a>
+        <p class="grupo-titulo">Ejecutar</p>
+        <a class="nav-item" href="#/procesar" data-vista="procesar">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.2v9.6L12.5 8z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <span class="nav-texto">Procesar</span>
+          <span class="nav-estado" id="nav-proceso" hidden></span>
+        </a>
+        <p class="grupo-titulo">Analizar</p>
         <a class="nav-item" href="#/resumen" data-vista="resumen">
           <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 13.5h11M4.5 11V7.5M8 11V3.5M11.5 11V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
           Resumen
@@ -41,12 +57,16 @@
         </a>
       </nav>
 
-      <div class="grupo">
-        <p class="grupo-titulo" id="t-camaras">Cámaras</p>
+      <div class="grupo" id="grupo-camaras">
+        <p class="grupo-titulo" id="t-camaras">Cámara a analizar</p>
         <div class="camaras" id="camaras" role="radiogroup" aria-labelledby="t-camaras"></div>
       </div>
 
       <div class="lateral-pie">
+        <a class="nav-item" href="#/sistema" data-vista="sistema">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="2.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.8v2M8 12.2v2M1.8 8h2M12.2 8h2M3.6 3.6l1.4 1.4M11 11l1.4 1.4M12.4 3.6L11 5M5 11l-1.4 1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Sistema
+        </a>
         <div class="auto-fila">
           <span id="t-auto">Actualizar cada 5 s</span>
           <button class="t-toggle" id="auto" type="button" role="switch" aria-checked="false" aria-labelledby="t-auto" data-on="false">
@@ -77,7 +97,7 @@
 
     <main class="hoja" id="contenido">
       <!-- ============================ Resumen ============================ -->
-      <section class="vista" id="vista-resumen" aria-labelledby="h-resumen">
+      <section class="vista" id="vista-resumen" aria-labelledby="h-resumen" hidden>
         <header class="titulo-fila">
           <div class="senal" id="senal" aria-hidden="true"></div>
           <div class="titulo-texto">
@@ -215,6 +235,210 @@
         </div>
       </section>
 
+      <!-- ============================ Videos ============================ -->
+      <section class="vista" id="vista-videos" aria-labelledby="h-videos" hidden>
+        <header class="titulo-fila">
+          <div class="titulo-texto">
+            <h1 id="h-videos">Videos</h1>
+            <p class="hallazgo" id="videos-resumen">Elige el video que vas a analizar. Cada uno recuerda su calibración y sus resultados.</p>
+          </div>
+          <button class="boton primario" id="videos-agregar" type="button" aria-expanded="false" aria-controls="videos-nuevo">Agregar un video</button>
+        </header>
+
+        <section class="tarjeta agregar" id="videos-nuevo" aria-labelledby="t-agregar" hidden>
+          <h2 id="t-agregar">Agregar un video</h2>
+          <div class="agregar-cols">
+            <div class="agregar-col">
+              <h3>Desde una ruta</h3>
+              <p class="nota">La forma más rápida para videos grandes: no se copia nada, el panel lo lee donde está.</p>
+              <form class="fila-campo" id="videos-form-ruta" novalidate>
+                <label class="solo-lectores" for="videos-ruta">Ruta completa del video</label>
+                <input class="entrada" id="videos-ruta" type="text" autocomplete="off" spellcheck="false" placeholder="C:\Videos\mi_calle.mp4">
+                <button class="boton contorno" type="submit">Agregar</button>
+              </form>
+            </div>
+            <div class="agregar-col">
+              <h3>Subir un archivo</h3>
+              <p class="nota">Se copia a la carpeta datos/videos. Para archivos de varios cientos de MB conviene la ruta.</p>
+              <div class="fila-campo">
+                <label class="boton contorno" for="videos-archivo">Elegir archivo</label>
+                <input class="solo-lectores" id="videos-archivo" type="file" accept="video/*,.mkv,.avi,.mov,.mp4">
+                <span class="nota" id="videos-subida" aria-live="polite"></span>
+              </div>
+              <div class="progreso fino" id="videos-progreso" hidden><span></span></div>
+            </div>
+          </div>
+          <p class="error" id="videos-error" role="alert" hidden></p>
+        </section>
+
+        <section class="tarjeta sin-relleno" aria-label="Videos disponibles">
+          <ul class="videos" id="videos-lista"></ul>
+        </section>
+      </section>
+
+      <!-- ============================ Calibrar ============================ -->
+      <section class="vista" id="vista-calibrar" aria-labelledby="h-calibrar" hidden>
+        <header class="titulo-fila">
+          <div class="titulo-texto">
+            <h1 id="h-calibrar">Calibrar</h1>
+            <p class="hallazgo">Dile al sistema dónde contar y cuánto mide el tramo. Arrastra las líneas sobre el video hasta que queden donde quieres.</p>
+          </div>
+          <label class="campo">
+            <span class="solo-lectores">Video a calibrar</span>
+            <select id="cal-video"></select>
+          </label>
+        </header>
+
+        <div class="rejilla calib">
+          <div class="principal">
+            <section class="tarjeta calibrador" aria-label="Editor de líneas">
+              <div class="lienzo" id="cal-lienzo" tabindex="0" role="application" aria-label="Editor de líneas. Arrastra los extremos de cada línea; con una línea seleccionada, las flechas la mueven 1 píxel (10 con Mayús)."></div>
+              <div class="cal-barra">
+                <div class="cal-tiempo">
+                  <button class="icono-boton" id="cal-menos" type="button" aria-label="Retroceder 5 segundos"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5L5.5 8l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  <label class="solo-lectores" for="cal-t">Instante del video</label>
+                  <input type="range" id="cal-t" min="0" max="100" step="1" value="0">
+                  <button class="icono-boton" id="cal-mas" type="button" aria-label="Avanzar 5 segundos"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5L10.5 8 6 12.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  <span class="num cal-reloj" id="cal-reloj">0:00</span>
+                </div>
+                <p class="nota" id="cal-consejo">Mueve la barra hasta un cuadro donde se vean la calle y algún vehículo: así sabrás si las líneas quedan bien.</p>
+              </div>
+            </section>
+
+            <section class="tarjeta" aria-labelledby="t-como">
+              <h2 id="t-como">Cómo se mide la velocidad</h2>
+              <p class="explica" id="cal-ejemplo"></p>
+            </section>
+          </div>
+
+          <aside class="riel" aria-label="Valores de la calibración">
+            <h2 class="riel-titulo" id="t-lineas">Líneas</h2>
+            <section class="tarjeta sin-relleno" aria-labelledby="t-lineas" id="cal-lineas"></section>
+
+            <h2 class="riel-titulo" id="t-medidas">Medidas</h2>
+            <section class="tarjeta" aria-labelledby="t-medidas">
+              <div class="campo-bloque">
+                <label for="cal-distancia">Distancia real entre A y B</label>
+                <div class="con-unidad"><input class="entrada num" id="cal-distancia" type="number" min="0.5" max="1000" step="0.1" inputmode="decimal"><span>m</span></div>
+                <p class="nota">De ella depende toda la velocidad. Mídela en la calle con una cinta o con un objeto conocido.</p>
+              </div>
+              <div class="regla" id="cal-regla">
+                <button class="enlace" id="cal-regla-boton" type="button" aria-expanded="false">¿No la conoces? Calcúlala con un objeto de medida conocida</button>
+                <div class="regla-detalle" id="cal-regla-detalle" hidden>
+                  <p class="nota">Arrastra los extremos de la línea punteada azul sobre algo de largo conocido que esté a lo largo de la calle (un carro, un andén, un poste) e indica cuánto mide.</p>
+                  <div class="campo-bloque">
+                    <label for="cal-regla-m">Largo real de ese objeto</label>
+                    <div class="con-unidad"><input class="entrada num" id="cal-regla-m" type="number" min="0.1" max="500" step="0.1" inputmode="decimal"><span>m</span></div>
+                  </div>
+                  <p class="resultado" id="cal-regla-res" aria-live="polite"></p>
+                  <button class="boton contorno" id="cal-regla-usar" type="button" disabled>Usar como distancia entre A y B</button>
+                </div>
+              </div>
+            </section>
+
+            <h2 class="riel-titulo" id="t-reglas">Velocidad y cámara</h2>
+            <section class="tarjeta" aria-labelledby="t-reglas">
+              <div class="campo-bloque">
+                <label for="cal-limite">Límite de velocidad de la vía</label>
+                <div class="con-unidad"><input class="entrada num" id="cal-limite" type="number" min="1" max="400" step="1" inputmode="numeric"><span>km/h</span></div>
+                <p class="nota">Sobre este valor se registra una alerta de exceso.</p>
+              </div>
+              <div class="campo-bloque">
+                <label for="cal-max">Velocidad máxima creíble</label>
+                <div class="con-unidad"><input class="entrada num" id="cal-max" type="number" min="1" max="400" step="1" inputmode="numeric"><span>km/h</span></div>
+                <p class="nota">Las mediciones por encima se descartan como errores.</p>
+              </div>
+              <div class="campo-bloque">
+                <label for="cal-camara">Nombre de la cámara</label>
+                <input class="entrada" id="cal-camara" type="text" maxlength="40" autocomplete="off" spellcheck="false">
+                <p class="nota">Letras, números, guion y guion bajo. Así aparece en el panel.</p>
+              </div>
+            </section>
+
+            <div class="guardar" id="cal-guardar">
+              <ul class="avisos" id="cal-avisos" aria-live="polite"></ul>
+              <button class="boton primario ancho-total" id="cal-guardar-boton" type="button">Guardar calibración</button>
+              <p class="guardado" id="cal-guardado" aria-live="polite" hidden></p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============================ Procesar ============================ -->
+      <section class="vista" id="vista-procesar" aria-labelledby="h-procesar" hidden>
+        <header class="titulo-fila">
+          <div class="titulo-texto">
+            <h1 id="h-procesar">Procesar</h1>
+            <p class="hallazgo" id="proc-resumen">Analiza el video con el modelo: cuenta los vehículos, mide su velocidad y guarda todo para el panel.</p>
+          </div>
+        </header>
+
+        <div class="rejilla proc">
+          <div class="principal">
+            <section class="tarjeta evidencia en-vivo" aria-label="Vista del análisis">
+              <figure class="foto" id="proc-foto">
+                <img id="proc-img" alt="Vista en vivo del análisis" hidden>
+                <div class="foto-vacia" id="proc-vacio"><p id="proc-vacio-texto">Elige un video y pulsa «Iniciar». Aquí verás cómo el sistema detecta y cuenta los vehículos.</p></div>
+              </figure>
+              <div class="progreso-bloque">
+                <div class="progreso" id="proc-progreso" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="Avance del análisis"><span></span></div>
+                <p class="progreso-texto"><span id="proc-estado">Sin análisis en curso</span><span class="num" id="proc-pct"></span></p>
+              </div>
+            </section>
+
+            <section class="kpis" id="proc-kpis" aria-label="Cifras del análisis" hidden>
+              <div class="kpi"><p class="kpi-etq">Contados</p><p class="kpi-valor"><span class="num" id="p-total">0</span></p><p class="kpi-nota" id="p-clases">&nbsp;</p></div>
+              <div class="kpi"><p class="kpi-etq">Con velocidad</p><p class="kpi-valor"><span class="num" id="p-med">0</span></p><p class="kpi-nota" id="p-media">&nbsp;</p></div>
+              <div class="kpi"><p class="kpi-etq">Excesos</p><p class="kpi-valor"><span class="num" id="p-exc">0</span></p><p class="kpi-nota" id="p-via">&nbsp;</p></div>
+              <div class="kpi"><p class="kpi-etq">Ritmo</p><p class="kpi-valor"><span class="num" id="p-cps">0</span><span class="unidad">cuadros/s</span></p><p class="kpi-nota" id="p-resto">&nbsp;</p></div>
+            </section>
+
+            <section class="tarjeta final" id="proc-final" hidden aria-live="polite"></section>
+          </div>
+
+          <aside class="riel" aria-label="Opciones del análisis">
+            <h2 class="riel-titulo" id="t-que">Qué analizar</h2>
+            <section class="tarjeta" aria-labelledby="t-que">
+              <div class="campo-bloque">
+                <label for="proc-video">Video</label>
+                <select class="entrada" id="proc-video"></select>
+                <p class="nota" id="proc-video-nota"></p>
+              </div>
+              <fieldset class="modos" id="proc-modos">
+                <legend>Cómo procesarlo</legend>
+                <label class="modo"><input type="radio" name="modo" value="vivo"><span class="modo-cuerpo"><b>En vivo, a velocidad normal</b><small>Se ve como un video. Si el equipo no alcanza, salta cuadros. Se guarda aparte, como «cámara_vivo».</small></span></label>
+                <label class="modo"><input type="radio" name="modo" value="completo"><span class="modo-cuerpo"><b>Todos los cuadros</b><small>El más preciso. Muestra la vista en vivo mientras avanza y guarda en la cámara del video.</small></span></label>
+                <label class="modo"><input type="radio" name="modo" value="rapido"><span class="modo-cuerpo"><b>Rápido, sin vista previa</b><small>Modelo liviano y sin dibujar: lo mejor para procesar en CPU un video largo.</small></span></label>
+              </fieldset>
+              <label class="casilla" id="proc-reemplazar-fila"><input type="checkbox" id="proc-reemplazar" checked><span>Reemplazar los datos anteriores de esta cámara <small id="proc-previos"></small></span></label>
+              <label class="casilla" id="proc-guardar-fila"><input type="checkbox" id="proc-guardar"><span>Guardar también el video anotado <small>Tarda más y ocupa espacio.</small></span></label>
+              <p class="error" id="proc-error" role="alert" hidden></p>
+              <div class="acciones">
+                <button class="boton primario" id="proc-iniciar" type="button">Iniciar</button>
+                <button class="boton contorno" id="proc-detener" type="button" hidden>Detener</button>
+              </div>
+            </section>
+
+            <h2 class="riel-titulo" id="t-reg">Registro técnico</h2>
+            <section class="tarjeta" aria-labelledby="t-reg">
+              <pre class="registro-tec" id="proc-log" tabindex="0">Aún no hay registro.</pre>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ============================ Sistema ============================ -->
+      <section class="vista" id="vista-sistema" aria-labelledby="h-sistema" hidden>
+        <header class="titulo-fila">
+          <div class="titulo-texto">
+            <h1 id="h-sistema">Sistema</h1>
+            <p class="hallazgo" id="sis-resumen">Estado del entorno donde corre el análisis.</p>
+          </div>
+          <button class="boton contorno" id="sis-reintentar" type="button">Volver a comprobar</button>
+        </header>
+        <div class="sistema-rejilla" id="sis-rejilla"></div>
+      </section>
+
       <!-- ==================== Sin datos / sin conexión ==================== -->
       <section class="vista" id="vista-estado" aria-labelledby="h-estado" hidden>
         <header class="titulo-fila"><div class="titulo-texto">
@@ -222,10 +446,16 @@
           <p class="hallazgo" id="estado-mensaje"></p>
         </div></header>
         <div class="tarjeta primeros-pasos">
-          <p>Para llenar este panel, procesa un video desde la terminal:</p>
-          <pre><code>python -m aforo            # menú guiado: elegir video, calibrar y procesar
-python -m aforo procesar   # procesar el video activo directamente</code></pre>
-          <button class="boton contorno" id="estado-reintentar" type="button">Volver a comprobar</button>
+          <p>Tres pasos y verás los resultados aquí:</p>
+          <ol class="pasos">
+            <li><a class="enlace" href="#/videos">Elige un video</a> o agrega el tuyo.</li>
+            <li><a class="enlace" href="#/calibrar">Calibra</a> las líneas arrastrándolas sobre el video.</li>
+            <li><a class="enlace" href="#/procesar">Procésalo</a> y vuelve a Resumen.</li>
+          </ol>
+          <div class="acciones">
+            <a class="boton primario" href="#/videos">Elegir un video</a>
+            <button class="boton contorno" id="estado-reintentar" type="button">Volver a comprobar</button>
+          </div>
         </div>
       </section>
     </main>

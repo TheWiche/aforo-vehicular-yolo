@@ -43,6 +43,7 @@ from aforo.analitica.alertas import (
 )
 from aforo.config import AppConfig
 from aforo.persistencia.db import CrucesDB, RegistradorCruces
+from aforo.reporte import Reportero
 from aforo.vision.detector import VehicleDetector
 from aforo.analitica.geometry import Point, poligono_entre_lineas
 from aforo.analitica.line_counter import LineCounter
@@ -66,6 +67,8 @@ class PipelineSummary:
     """Resumen final de la ejecucion (lo imprime aforo procesar)."""
     frames_procesados: int = 0
     frames_saltados: int = 0   # solo en tiempo real: cuadros que no se analizaron para no atrasarse
+    detenido: bool = False     # True si alguien pidio parar (Reportero) antes de llegar al final del video
+    total_frames: Optional[int] = None
     segundos_proceso: float = 0.0
     conteo_por_clase: Dict[str, int] = field(default_factory=dict)
     conteo_por_sentido: Dict[str, int] = field(default_factory=dict)
@@ -149,8 +152,9 @@ class _ControlVia:
 class AforoPipeline:
     """Ejecuta el sistema completo de aforo y velocidad sobre un video."""
 
-    def __init__(self, config: AppConfig) -> None:
+    def __init__(self, config: AppConfig, reportero: Optional[Reportero] = None) -> None:
         self._config = config
+        self._reportero = reportero      # canal hacia la web (progreso, cuadro en vivo, parada); opcional
 
     # ------------------------------------------------------------------ API
     def run(self, reemplazar_camara: bool = False) -> PipelineSummary:
@@ -190,6 +194,8 @@ class AforoPipeline:
         alertas_exceso = 0
         frames = 0
         ultimo_idx = -1
+        detenido = False
+        reportero = self._reportero
         tiempo_real = cfg.visual.tiempo_real
         t_inicio = time.perf_counter()
 
@@ -264,8 +270,9 @@ class AforoPipeline:
 
                         # 7) Dibujo y escritura del video anotado
                         # (sin video y sin ventana no hay nada que dibujar: se ahorra el trabajo)
+                        cuadro_web = reportero is not None and reportero.cuadro_vencido()
                         anotado = frame
-                        if sink is not None or cfg.visual.mostrar_ventana:
+                        if sink is not None or cfg.visual.mostrar_ventana or cuadro_web:
                             anotado = visualizer.render(
                                 frame, seguidos, counter, speed, nuevos_cruces, estado_trafico=estado.value
                             )
@@ -275,6 +282,27 @@ class AforoPipeline:
                         barra.set_postfix(total=counter.total, refresh=False)
                         barra.update(idx - ultimo_idx)      # incluye los cuadros saltados
                         ultimo_idx = idx
+
+                        # 8) Canal hacia la web: cuadro en vivo, progreso y peticion de parar
+                        if reportero is not None:
+                            if cuadro_web:
+                                reportero.publicar_cuadro(anotado)
+                            if reportero.estado_vencido():
+                                transcurrido = max(time.perf_counter() - t_inicio, 1e-6)
+                                velocidades = [m.speed_kmh for m in mediciones]
+                                reportero.publicar_estado(
+                                    "corriendo", frame=idx + 1, total_frames=info.total_frames, fps_video=info.fps,
+                                    cuadros_por_s=round(frames / transcurrido, 1), analizados=frames,
+                                    total=counter.total,
+                                    por_clase={detector.class_names[c]: n for c, n in counter.counts_by_class.items()},
+                                    mediciones=len(velocidades),
+                                    velocidad_media=round(sum(velocidades) / len(velocidades), 1) if velocidades else None,
+                                    alertas_exceso=alertas_exceso, estado_via=estado.value,
+                                )
+                            if reportero.debe_parar():
+                                logger.info("Detenido a peticion del usuario (desde la web).")
+                                detenido = True
+                                break
 
                         if cfg.visual.mostrar_ventana and not self._mostrar(anotado):
                             logger.info("Interrumpido por el usuario (tecla 'q').")
@@ -291,6 +319,8 @@ class AforoPipeline:
         return PipelineSummary(
             frames_procesados=frames,
             frames_saltados=max(0, ultimo_idx + 1 - frames),
+            detenido=detenido,
+            total_frames=info.total_frames,
             segundos_proceso=time.perf_counter() - t_inicio,
             conteo_por_clase={detector.class_names[c]: n for c, n in counter.counts_by_class.items()},
             conteo_por_sentido={

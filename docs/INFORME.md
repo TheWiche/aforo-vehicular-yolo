@@ -57,10 +57,10 @@ cambios de clase de un mismo vehículo, máscara de movimiento inflada por sombr
 distancia incorrecta. Detalle: [`CASOS_DE_FALLA.md`](CASOS_DE_FALLA.md).
 
 ## 8. Reproducibilidad
-Repositorio ordenado, `requirements.txt` con versiones exactas, pruebas unitarias (109) y flujo
-completo en el [`README`](../README.md): `pip install -r requirements.txt` →
-`python -m aforo descargar` → `python -m aforo procesar ...` → `python -m aforo dashboard` →
-`python -m aforo evaluar ...`.
+Repositorio ordenado, `requirements.txt` con versiones exactas, pruebas unitarias (151) y flujo
+completo en el [`README`](../README.md): `python iniciar.py` (revisa el entorno, instala lo que falte y abre el panel donde se elige el video, se calibra
+arrastrando las líneas y se procesa en vivo) → `python -m aforo evaluar ...`.
+También se puede por terminal: `python -m aforo descargar` → `python -m aforo procesar ...` → `python -m aforo dashboard`.
 
 ## 9. Trabajo propio
 Se usaron librerías (Ultralytics, `trackers`, `supervision`, OpenCV, FastAPI) y asistencia

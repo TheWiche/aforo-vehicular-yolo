@@ -19,3 +19,6 @@ datos/salidas/*
 !datos/db/.gitkeep
 !datos/salidas/.gitkeep
 # datos/evaluacion/ SI se versiona: contiene la verdad de terreno (JSON anotado a mano)
+
+# Videos registrados por ruta desde el panel: rutas personales de cada computador
+datos/videos_externos.json
