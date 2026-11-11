@@ -27,6 +27,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     ap.add_argument("--no-abrir", action="store_true", help="No abrir el navegador automaticamente.")
     args = ap.parse_args(argv)
 
+    # Cargar torch para saber si hay GPU tarda unos segundos: se hace ya, en segundo plano, y la pagina
+    # "Procesar" muestra los modos adecuados al abrirse sin esperar.
+    from .backend import sistema
+    threading.Thread(target=sistema.estado_gpu, daemon=True).start()
+
     url = f"http://{args.host}:{args.puerto}"
     print(f"Dashboard en {url}  (base de datos: {args.db})\nCtrl+C para detenerlo.")
     if not args.no_abrir:

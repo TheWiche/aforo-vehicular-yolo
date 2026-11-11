@@ -8,6 +8,26 @@ import { recordarVideo, videoRecordado } from "../estado.js";
 
 const $ = (id) => document.getElementById(id);
 const ACTIVO = ["iniciando", "corriendo"];
+
+// Los modos dependen del equipo: con GPU solo los de GPU; el modo liviano (pensado para CPU) solo sin GPU.
+const MODOS = {
+  completo: {
+    titulo: "Análisis completo",
+    gpu: "Analiza todos los cuadros, sin saltarse ninguno: es el que da los datos definitivos. Con tu GPU va casi a la velocidad del video y muestra la vista en vivo. Se guarda en la cámara del video.",
+    cpu: "El más preciso: analiza todos los cuadros con el modelo completo. En CPU es muy lento (puede tardar horas con un video largo). Se guarda en la cámara del video.",
+  },
+  vivo: {
+    titulo: "En vivo, a velocidad normal",
+    gpu: "Reproduce el video a su ritmo real, como un reproductor, mientras cuenta y mide. Si algún cuadro no alcanza a analizarse, lo salta. Ideal para demostrar. Se guarda aparte, como «cámara_vivo», sin tocar tus datos completos.",
+    cpu: "Reproduce el video a su ritmo real, pero sin GPU salta muchos cuadros y pierde vehículos: solo sirve para demostrar. Se guarda aparte, como «cámara_vivo».",
+  },
+  rapido: {
+    titulo: "Rápido, sin vista previa",
+    cpu: "Para equipos sin GPU: modelo liviano y sin dibujar nada, lo más rápido en CPU aunque algo menos preciso. Se guarda en la cámara del video.",
+  },
+};
+const ORDEN = { gpu: ["completo", "vivo"], otro: ["rapido", "completo", "vivo"] };
+const RECOMENDADO = { gpu: "completo", otro: "rapido" };
 const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 /**
@@ -18,6 +38,7 @@ const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart
 export function crearProcesar({ alEstado, alTerminar }) {
   let videos = [];
   let gpu = null;                    // "gpu" | "cpu_con_gpu" | "cpu" (se averigua en segundo plano)
+  let modoElegido = null;
   let estado = { estado: "libre" };
   let visible = false;
   let temporizador = 0;
@@ -25,6 +46,7 @@ export function crearProcesar({ alEstado, alTerminar }) {
 
   const video = () => videos.find((v) => v.nombre === $("proc-video").value);
   const modo = () => (document.querySelector('input[name="modo"]:checked') || {}).value;
+  const familia = () => (gpu === "gpu" ? "gpu" : "otro");
   const activo = () => ACTIVO.includes(estado.estado);
 
   // ------------------------------------------------------------------ opciones
@@ -35,6 +57,20 @@ export function crearProcesar({ alEstado, alTerminar }) {
     pintarOpciones();
   }
 
+  /** Pinta los modos que corresponden al equipo (se vuelven a pintar cuando se sabe si hay GPU). */
+  function pintarModos() {
+    const lista = $("proc-modos-lista");
+    if (gpu === null) { lista.innerHTML = ""; $("proc-equipo").hidden = false; return; }
+    const fam = familia();
+    $("proc-equipo").hidden = gpu !== "cpu_con_gpu";
+    if (gpu === "cpu_con_gpu") $("proc-equipo").textContent = "Tu tarjeta NVIDIA no se está usando (PyTorch está sin CUDA), así que el análisis corre en CPU. Cierra el panel y vuelve a ejecutar python iniciar.py para activarla.";
+    const orden = ORDEN[fam];
+    if (!orden.includes(modoElegido)) modoElegido = RECOMENDADO[fam];
+    const actual = modoElegido;
+    const html = orden.map((id) => `<label class="modo${id === RECOMENDADO[fam] ? " recomendado" : ""}"><input type="radio" name="modo" value="${id}"${id === actual ? " checked" : ""}${activo() ? " disabled" : ""}><span class="modo-cuerpo"><b>${MODOS[id].titulo}</b><small>${MODOS[id][fam === "gpu" ? "gpu" : "cpu"]}</small></span></label>`).join("");
+    if (lista.dataset.html !== html) { lista.innerHTML = html; lista.dataset.html = html; }     // sin repintar en cada sondeo
+  }
+
   function pintarOpciones() {
     const v = video();
     const nota = $("proc-video-nota");
@@ -42,30 +78,18 @@ export function crearProcesar({ alEstado, alTerminar }) {
     else if (!v.calibrado) nota.innerHTML = 'Este video aún no está calibrado. <a class="enlace" href="#/calibrar?video=' + encodeURIComponent(v.nombre) + '">Calibrarlo →</a>';
     else nota.textContent = `Cámara «${v.camara}»${v.duracion_s ? ` · ${duracion(v.duracion_s)} de video` : ""}`;
 
-    // Modo recomendado segun el hardware: con GPU el modo en vivo es fiable; sin ella, el rapido.
-    const recomendado = gpu === "gpu" ? "vivo" : gpu ? "rapido" : null;
-    document.querySelectorAll(".modo").forEach((m) => m.classList.toggle("recomendado", m.querySelector("input").value === recomendado));
-    if (!modo()) {
-      const por_defecto = document.querySelector(`input[name="modo"][value="${recomendado || "vivo"}"]`);
-      if (por_defecto) por_defecto.checked = true;
-    }
+    pintarModos();
     const m = modo();
-    const textoVivo = document.querySelector('input[value="vivo"] + .modo-cuerpo small');
-    if (textoVivo) {
-      textoVivo.textContent = gpu === "gpu"
-        ? "Se ve como un video y casi no pierde vehículos con tu GPU. Se guarda aparte, como «cámara_vivo»."
-        : "Se ve como un video, pero sin GPU salta muchos cuadros y pierde vehículos: sirve para demostrar. Se guarda aparte, como «cámara_vivo».";
-    }
     // "Reemplazar" solo aplica a los modos que escriben en la camara del video.
     const previos = v ? v.cruces : 0;
     $("proc-reemplazar-fila").hidden = m === "vivo" || !previos;
     $("proc-previos").textContent = previos ? `(hoy tiene ${entero(previos)} cruces)` : "";
     $("proc-guardar-fila").hidden = m !== "completo";
-    $("proc-iniciar").disabled = activo() || !v || !v.calibrado || !v.legible;
+    $("proc-iniciar").disabled = activo() || !v || !v.calibrado || !v.legible || !modo();
   }
 
   $("proc-video").addEventListener("change", () => { recordarVideo($("proc-video").value); pintarOpciones(); });
-  $("proc-modos").addEventListener("change", pintarOpciones);
+  $("proc-modos").addEventListener("change", () => { modoElegido = modo(); pintarOpciones(); });
 
   // ------------------------------------------------------------------ iniciar / detener
   $("proc-iniciar").addEventListener("click", async () => {
@@ -209,6 +233,7 @@ export function crearProcesar({ alEstado, alTerminar }) {
   async function averiguarGpu() {
     if (gpu) return;
     try { gpu = (await pedirSistema()).gpu.modo; } catch { gpu = "cpu"; }
+    pintarModos();
     pintarOpciones();
   }
 

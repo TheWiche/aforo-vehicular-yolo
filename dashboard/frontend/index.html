@@ -406,9 +406,8 @@
               </div>
               <fieldset class="modos" id="proc-modos">
                 <legend>Cómo procesarlo</legend>
-                <label class="modo"><input type="radio" name="modo" value="vivo"><span class="modo-cuerpo"><b>En vivo, a velocidad normal</b><small>Se ve como un video. Si el equipo no alcanza, salta cuadros. Se guarda aparte, como «cámara_vivo».</small></span></label>
-                <label class="modo"><input type="radio" name="modo" value="completo"><span class="modo-cuerpo"><b>Todos los cuadros</b><small>El más preciso. Muestra la vista en vivo mientras avanza y guarda en la cámara del video.</small></span></label>
-                <label class="modo"><input type="radio" name="modo" value="rapido"><span class="modo-cuerpo"><b>Rápido, sin vista previa</b><small>Modelo liviano y sin dibujar: lo mejor para procesar en CPU un video largo.</small></span></label>
+                <p class="nota" id="proc-equipo">Comprobando tu equipo…</p>
+                <div class="modos-lista" id="proc-modos-lista"></div>
               </fieldset>
               <label class="casilla" id="proc-reemplazar-fila"><input type="checkbox" id="proc-reemplazar" checked><span>Reemplazar los datos anteriores de esta cámara <small id="proc-previos"></small></span></label>
               <label class="casilla" id="proc-guardar-fila"><input type="checkbox" id="proc-guardar"><span>Guardar también el video anotado <small>Tarda más y ocupa espacio.</small></span></label>

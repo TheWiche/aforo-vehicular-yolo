@@ -300,9 +300,12 @@ def crear_app(ruta_db: Optional[Path] = None, limite_kmh: Optional[float] = None
         errores, _ = perfiles.validar(perfil, props.get("ancho"), props.get("alto"))
         if errores:
             raise HTTPException(409, "La calibración guardada tiene problemas: " + " ".join(errores))
+        con_gpu = sistema.estado_gpu()["modo"] == "gpu"
+        if con_gpu and cuerpo.modo == "rapido":
+            raise HTTPException(422, "Con GPU no hace falta el modo rápido (es para CPU): usa el análisis completo.")
         try:
             gestor.iniciar(ruta_video, cuerpo.modo, str(perfil.get("CAMARA") or "camara_01"),
-                           sistema.estado_gpu()["modo"] == "gpu", cuerpo.reemplazar, cuerpo.guardar_video)
+                           con_gpu, cuerpo.reemplazar, cuerpo.guardar_video)
         except ErrorProceso as exc:
             raise HTTPException(409, str(exc))
         return gestor.estado()

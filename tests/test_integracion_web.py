@@ -287,6 +287,10 @@ class ApiWebTest(unittest.TestCase):
         self.assertEqual(ok.status_code, 200)
         args = self.gestor.iniciar.call_args.args
         self.assertEqual((args[0].name, args[1], args[2], args[3]), ("calle.avi", "vivo", "calle", True))
+        with mock.patch.object(sistema, "estado_gpu", return_value={"modo": "gpu", "nombre": "X"}):
+            liviano = self.cliente.post("/api/proceso/iniciar", json={"video": "calle.avi", "modo": "rapido"})
+        self.assertEqual(liviano.status_code, 422)                            # el modo liviano es solo para CPU
+        self.assertIn("GPU", liviano.json()["detail"])
         self.gestor.iniciar.side_effect = ErrorProceso("Ya hay un análisis en marcha.")
         with mock.patch.object(sistema, "estado_gpu", return_value={"modo": "cpu", "nombre": ""}):
             ocupado = self.cliente.post("/api/proceso/iniciar", json={"video": "calle.avi", "modo": "rapido"})
