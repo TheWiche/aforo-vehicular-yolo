@@ -6,7 +6,9 @@ línea virtual, estima su **velocidad (km/h)**, vigila el **estado del tráfico*
 (API FastAPI + interfaz HTML/CSS/JS) lo consulta con SQL.
 
 Informe y documentación en [`docs/`](docs/) (contexto del cliente, datos, técnicas del curso,
-modelo de datos, métricas, casos de falla y guía de sustentación).
+modelo de datos, métricas y casos de falla).
+
+**Video demo del sistema:** <https://drive.google.com/file/d/1CEaKPCf7svNbZtTBXNghjAELMgU_hO8I/view?usp=sharing>
 
 ## Instalación
 
@@ -227,14 +229,13 @@ Con la GPU, `yolov8s` a 960 px procesa ~20 cuadros/s (en CPU, ~3). El límite pa
 
 | Documento | Contenido |
 |---|---|
-| [`docs/INFORME.md`](docs/INFORME.md) | Borrador del informe (enlaza todo lo demás) |
-| [`docs/CONTEXTO_CLIENTE.md`](docs/CONTEXTO_CLIENTE.md) | Cliente, problema de negocio e indicadores de éxito |
+| [`docs/INFORME.md`](docs/INFORME.md) · [`docs/INFORME.pdf`](docs/INFORME.pdf) | Informe final del proyecto (versión Markdown y PDF) |
+| [`docs/CONTEXTO_CLIENTE.md`](docs/CONTEXTO_CLIENTE.md) | Cliente (Secretaría de Tránsito de Riohacha), problema, indicadores y costos |
 | [`docs/DATOS.md`](docs/DATOS.md) | Datos propios y públicos (citas, licencias), protocolo de grabación |
 | [`docs/TECNICAS.md`](docs/TECNICAS.md) | Técnicas del curso usadas y dónde |
-| [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md) | Modelo relacional, DDL, diccionario |
-| [`docs/METRICAS.md`](docs/METRICAS.md) | Cómo se miden precisión, recall, error de velocidad |
+| [`docs/MODELO_DATOS.md`](docs/MODELO_DATOS.md) · [`docs/schema.sql`](docs/schema.sql) | Modelo relacional, DDL, diccionario y script SQL |
+| [`docs/METRICAS.md`](docs/METRICAS.md) · [`docs/METRICAS_RESULTADOS.md`](docs/METRICAS_RESULTADOS.md) | Definición de métricas, auditoría de tracking y resultados medidos |
 | [`docs/CASOS_DE_FALLA.md`](docs/CASOS_DE_FALLA.md) | 5 casos de falla con evidencia |
-| [`docs/GUIA_SUSTENTACION.md`](docs/GUIA_SUSTENTACION.md) | Qué hace cada módulo y preguntas probables |
 
 ## Notas
 

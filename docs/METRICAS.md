@@ -70,6 +70,7 @@ IDs efímeros, cambios de clase). Resultados sobre los videos públicos:
 
 | Video | Frames | IDs | Vida media de un ID | IDs efímeros (< 8 fr.) | Cambios de clase | Invariantes |
 |---|---|---|---|---|---|---|
+| `prueba.mp4` (1080p, propio) | 3,000 | 7 | 47.3 fr. | 0 | 0 | OK |
 | `autopista_1` (4K, tráfico fluido) | 538 | 12 | 171 fr. | 0 | 6 | OK |
 | `carretera_3` (1080p, moderado) | 300 | 12 | 128 fr. | 0 | 0 | OK |
 | `autopista_2` (1080p, denso) | 400 | 410 | 28 fr. | 31 | 61 | OK |
