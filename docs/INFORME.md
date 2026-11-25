@@ -3,13 +3,15 @@
 | Campo | Información |
 |---|---|
 | **Institución / Programa** | Universidad de La Guajira — Ingeniería de Sistemas |
-| **Asignatura** | Visión Artificial |
+| **Asignatura** | Internet de las Cosas (IoT) |
 | **Docente** | Eduardo Sierra Fragozo (`elsierra@uniguajira.edu.co`) |
 | **Proyecto** | #1 — Aforo vehicular con estimación de velocidad |
 | **Integrantes** | Nelson Cotes y Nolger Rodriguez |
 | **Repositorio en GitHub** | <https://github.com/TheWiche/aforo-vehicular-yolo> |
 | **Video demo** | <https://drive.google.com/file/d/1CEaKPCf7svNbZtTBXNghjAELMgU_hO8I/view?usp=sharing> |
 | **Video propio (`prueba.mp4`)** | <https://drive.google.com/file/d/1uIu75rfCu8QMMPlDfBzAZOLBPvNdPInT/view?usp=sharing> |
+
+---
 
 ## 1. Contexto empresarial
 
