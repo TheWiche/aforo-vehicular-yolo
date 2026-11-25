@@ -8,7 +8,9 @@ línea virtual, estima su **velocidad (km/h)**, vigila el **estado del tráfico*
 Informe y documentación en [`docs/`](docs/) (contexto del cliente, datos, técnicas del curso,
 modelo de datos, métricas y casos de falla).
 
-**Video demo del sistema:** <https://drive.google.com/file/d/1CEaKPCf7svNbZtTBXNghjAELMgU_hO8I/view?usp=sharing>
+- **Video demo del sistema:** <https://drive.google.com/file/d/1CEaKPCf7svNbZtTBXNghjAELMgU_hO8I/view?usp=sharing>
+- **Video propio (`prueba.mp4`):** <https://drive.google.com/file/d/1uIu75rfCu8QMMPlDfBzAZOLBPvNdPInT/view?usp=sharing>
+- **Informe en PDF:** [`docs/INFORME.pdf`](docs/INFORME.pdf)
 
 ## Instalación
 
